@@ -74,7 +74,7 @@ predictor = StreetTempPredictor()
 predictor.fit(df, station_encoder)
 
 # --- Streamlit UI ---
-st.title("🌡️ Street-Level Temperature Predictor")
+st.title("🌡️ Street-Level Temperature Predictor 🌡️")
 
 station = st.selectbox("Select a Station", sorted(df['Station name'].dropna().unique()))
 high_temp = st.number_input("Citywide High Temp (°F)", min_value=50.0, max_value=120.0, step=0.1)
