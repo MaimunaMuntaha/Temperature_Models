@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 @st.cache_data
 def load_and_prepare_data():
-    weather_df = pd.read_csv('Citywide weather record_ July-August - Sheet1.csv')
+    weather_df = pd.read_csv('citywide_weather.csv')
     weather_df['Date'] = pd.to_datetime(weather_df['Date'])
 
     station_df = pd.read_excel('CUNY_MTA.xlsx')
