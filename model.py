@@ -8,6 +8,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import warnings
 warnings.filterwarnings('ignore')
 
+#Function to load data
 @st.cache_data
 def load_and_prepare_data():
     weather_df = pd.read_csv('citywide_weather.csv')
@@ -19,7 +20,7 @@ def load_and_prepare_data():
 
     merged_df = pd.merge(station_df, weather_df, on='Date', how='inner')
     return merged_df
-
+#Create the embeddings for training the model e.g., Street Level Ta, Citywide High temp, Staton name, and Hour of day 
 def create_features(df):
     df['Hour'] = pd.to_datetime(
         df['Time for street level data collection'],
@@ -40,7 +41,7 @@ def create_features(df):
     df['Station_Encoded'] = le_station.fit_transform(df['Station name'])
 
     return df, le_station
-
+# What the inputs will be to the GUI/Streamlit UI and how the model will learn
 class StreetTempPredictor:
     def __init__(self):
         self.model = RandomForestRegressor(n_estimators=200, max_depth=15, random_state=42)
@@ -67,13 +68,13 @@ class StreetTempPredictor:
         features = np.array([[high_temp, station_encoded, hour, day_of_week, day_of_month]])
         return round(self.model.predict(features)[0], 1)
 
-# Load and train
+# Load and train the CSV files
 df = load_and_prepare_data()
 df, station_encoder = create_features(df)
 predictor = StreetTempPredictor()
 predictor.fit(df, station_encoder)
 
-# --- Streamlit UI ---
+# ACTUAL UI / Streamlit
 st.title("🌡️ Street-Level Temperature Predictor 🌡️")
 
 station = st.selectbox("Select a Station", sorted(df['Station name'].dropna().unique()))
