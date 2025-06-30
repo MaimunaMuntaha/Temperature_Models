@@ -45,11 +45,7 @@ def create_features(df):
     # Encode categorical features
     le_station = LabelEncoder()
     df['Station_Encoded'] = le_station.fit_transform(df['Station name'])
-    
-    # Crowd level encoding (if available)
-    if 'How crowded is the platform?' in df.columns:
-        crowd_mapping = {'Empty': 0, 'Light': 1, 'Medium': 2, 'Heavy': 3, 'Very Heavy': 4}
-        df['Crowd_Encoded'] = df['How crowded is the platform?'].map(crowd_mapping).fillna(1)
+     
     
     df = df.dropna(subset=['Street level air temperature', 'Platform level air temperature', 
                           'High Temp (°F)', 'Station_Encoded', 'Hour'])
@@ -99,9 +95,9 @@ class PlatformTempPredictor:
     def fit(self, df, station_encoder):
         self.station_encoder = station_encoder
         
-        # Features: street temp, station, hour, day, crowd level
+        # Features: street temp, station, hour, day
         X = df[['Street level air temperature', 'Station_Encoded', 
-                'Hour', 'Day_of_Week', 'Day_of_Month', 'Crowd_Encoded']]
+                'Hour', 'Day_of_Week', 'Day_of_Month']]
         y = df['Platform level air temperature']
 
         # Grid search for best parameters (commented out after finding optimal)
@@ -124,17 +120,15 @@ class PlatformTempPredictor:
         st.write(f"- R² Score: {r2_score(y_test, y_pred):.3f}")
         st.write(f"- MAE: {mean_absolute_error(y_test, y_pred):.2f}°F")
 
-    def predict(self, street_temp, station_name, hour, day_of_week, day_of_month, crowd_level):
+    def predict(self, street_temp, station_name, hour, day_of_week, day_of_month):
         try:
             station_encoded = self.station_encoder.transform([station_name])[0]
         except:
             station_encoded = 0
             
-        crowd_mapping = {'Empty': 0, 'Light': 1, 'Medium': 2, 'Heavy': 3, 'Very Heavy': 4}
-        crowd_encoded = crowd_mapping.get(crowd_level, 1)
         
         features = np.array([[street_temp, station_encoded, hour, 
-                             day_of_week, day_of_month, crowd_encoded]])
+                             day_of_week, day_of_month]])
         return round(self.model.predict(features)[0], 1)
 
 # Load and prepare data
@@ -154,8 +148,7 @@ st.title("🌡️ MTA Temperature Prediction System 🌡️")
 station = st.selectbox("Select a Station", sorted(df['Station name'].dropna().unique()))
 high_temp = st.number_input("Citywide High Temp (°F)", min_value=50.0, max_value=120.0, step=0.1, value=75.0)
 date_input = st.date_input("Date")
-hour = st.slider("Hour of the Day", 0, 23, 12)
-crowd_level = st.selectbox("Platform Crowd Level", ['Empty', 'Light', 'Medium', 'Heavy', 'Very Heavy'], index=1)
+hour = st.slider("Hour of the Day", 0, 23, 12) 
 
 if st.button("Predict Temperatures"):
     # First predict street temperature
@@ -173,8 +166,7 @@ if st.button("Predict Temperatures"):
         station_name=station,
         hour=hour,
         day_of_week=date_input.weekday(),
-        day_of_month=date_input.day,
-        crowd_level=crowd_level
+        day_of_month=date_input.day
     )
     
     st.success(f"""
