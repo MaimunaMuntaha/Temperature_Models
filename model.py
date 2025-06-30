@@ -20,6 +20,7 @@ def load_and_prepare_data():
 
     merged_df = pd.merge(station_df, weather_df, on='Date', how='inner')
     return merged_df
+    
 #Create the embeddings for training the model e.g., Street Level Ta, Citywide High temp, Staton name, and Hour of day 
 def create_features(df):
     df['Hour'] = pd.to_datetime(
@@ -41,6 +42,7 @@ def create_features(df):
     df['Station_Encoded'] = le_station.fit_transform(df['Station name'])
 
     return df, le_station
+    
 # What the inputs will be to the GUI/Streamlit UI and how the model will learn
 class StreetTempPredictor:
     def __init__(self):
