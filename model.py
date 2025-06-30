@@ -154,8 +154,7 @@ st.title("🌡️ MTA Temperature Prediction System 🌡️")
 station = st.selectbox("Select a Station", sorted(df['Station name'].dropna().unique()))
 high_temp = st.number_input("Citywide High Temp (°F)", min_value=50.0, max_value=120.0, step=0.1, value=75.0)
 date_input = st.date_input("Date")
-hour = st.slider("Hour of the Day", 0, 23, 12)
-crowd_level = st.selectbox("Platform Crowd Level", ['Empty', 'Light', 'Medium', 'Heavy', 'Very Heavy'], index=1)
+hour = st.slider("Hour of the Day", 0, 23, 12) 
 
 if st.button("Predict Temperatures"):
     # First predict street temperature
