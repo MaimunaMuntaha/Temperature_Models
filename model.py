@@ -13,8 +13,7 @@ warnings.filterwarnings('ignore')
  
 # Set page config
 st.set_page_config(
-    page_title="NYC Subway Temperature Predictor",
-    page_icon="🚇",
+    page_title="NYC Subway Forecast", 
     layout="wide"
 )
 
@@ -193,9 +192,8 @@ def train_platform_model(X, y):
     return model, scaler, model_results, 'GradientBoostingRegressor'
 
 def main():
-    st.title("🚇 NYC Subway Complete Temperature Predictor")
-    st.markdown("Predict both street-level and platform temperatures using optimized models.")
-    st.info("🎯 **Model Performance**: Street (BaggingRegressor R² = 0.3427) | Platform (GradientBoostingRegressor R² = 0.2434)")
+    st.title("NYC Subway Forecast")
+    st.markdown("Predict both street-level and platform temperatures given a Platform below.") 
     
     # Load and prepare data
     platform_df, street_df, le_station_platform, le_crowd, le_station_street = load_and_preprocess_data()
@@ -220,23 +218,21 @@ def main():
     page = st.sidebar.selectbox("Choose a page", ["Combined Prediction", "Model Performance", "Data Analysis"])
     
     if page == "Combined Prediction":
-        st.header("🎯 Complete Temperature Prediction")
+        st.header("Temperature Prediction Model Stats")
         
         # Show model performance summary
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Street Model Performance")
             st.metric("R² Score", f"{street_predictor.performance_metrics['r2']:.4f}")
-            st.metric("MAE", f"{street_predictor.performance_metrics['mae']:.2f}°F")
-            st.success("✅ BaggingRegressor (Best for Street)")
+            st.metric("MAE", f"{street_predictor.performance_metrics['mae']:.2f}°F") 
         
         with col2:
             st.subheader("Platform Model Performance")
             platform_r2 = platform_model_results[best_platform_model]['r2']
             platform_mae = platform_model_results[best_platform_model]['mae']
             st.metric("R² Score", f"{platform_r2:.4f}")
-            st.metric("MAE", f"{platform_mae:.2f}°F")
-            st.success("✅ GradientBoostingRegressor (Best for Platform)")
+            st.metric("MAE", f"{platform_mae:.2f}°F") 
         
         # Create prediction interface
         st.subheader("Input Parameters")
@@ -277,7 +273,7 @@ def main():
                         day_of_month=day_of_month
                     )
                     
-                    st.metric("🏙️ Predicted Street Temperature", f"{predicted_street_temp}°F")
+                    st.metric("Street Temperature Forecast:", f"{predicted_street_temp}°F")
                     
                     # Step 2: Use predicted street temp to predict platform temp using GradientBoostingRegressor
                     try:
@@ -305,33 +301,29 @@ def main():
                         platform_features_scaled = platform_scaler.transform(platform_features)
                         predicted_platform_temp = platform_model.predict(platform_features_scaled)[0]
                         
-                        st.metric("🚇 Predicted Platform Temperature", f"{predicted_platform_temp:.1f}°F")
+                        st.metric("Platform Temperature Forecast:", f"{predicted_platform_temp:.1f}°F")
                         
                         # Calculate and display temperature difference
                         temp_diff = predicted_platform_temp - predicted_street_temp
-                        st.metric("🌡️ Temperature Difference (Platform - Street)", f"{temp_diff:+.1f}°F")
+                        st.metric("🌡Temperature Difference (Platform - Street)", f"{temp_diff:+.1f}°F")
                         
                         # Provide context
                         if temp_diff > 8:
-                            st.info("🔥 Platform is significantly warmer than street level")
+                            st.info("Platform is significantly warmer than street level")
                         elif temp_diff > 3:
-                            st.info("🌡️ Platform is moderately warmer than street level")
+                            st.info("Platform is moderately warmer than street level")
                         elif temp_diff < -8:
-                            st.info("❄️ Platform is significantly cooler than street level")
+                            st.info("Platform is significantly cooler than street level")
                         elif temp_diff < -3:
-                            st.info("🌡️ Platform is moderately cooler than street level")
+                            st.info("Platform is moderately cooler than street level")
                         else:
-                            st.info("🌡️ Platform temperature is similar to street level")
+                            st.info("Platform temperature is similar to street level")
                             
                         # Show prediction confidence
                         st.write("**Prediction Confidence:**")
                         st.write(f"- Street temp uncertainty: ±{street_predictor.performance_metrics['mae']:.1f}°F")
                         st.write(f"- Platform temp uncertainty: ±{platform_mae:.1f}°F")
                         
-                        # Model information
-                        st.write("**Models Used:**")
-                        st.write("- Street: BaggingRegressor (R² = 0.3427)")
-                        st.write("- Platform: GradientBoostingRegressor (R² = 0.2434)")
                         
                     except ValueError as e:
                         st.error(f"Error predicting platform temperature: Station might not be in platform training data.")
@@ -354,8 +346,6 @@ def main():
         with col3:
             st.metric("Root Mean Squared Error", f"{street_metrics['rmse']:.2f}°F")
         
-        st.success("✅ BaggingRegressor selected as best model for street temperature prediction")
-        
         # Platform model performance
         st.subheader("Platform Temperature Model - GradientBoostingRegressor")
         
@@ -367,9 +357,7 @@ def main():
         with col2:
             st.metric("Mean Absolute Error", f"{best_results['mae']:.2f}°F")
         with col3:
-            st.metric("Root Mean Squared Error", f"{np.sqrt(best_results['mse']):.2f}°F")
-        
-        st.success("✅ GradientBoostingRegressor selected as best model for platform temperature prediction")
+            st.metric("Root Mean Squared Error", f"{np.sqrt(best_results['mse']):.2f}°F") 
         
         # Platform model predictions vs actual
         fig = go.Figure()
