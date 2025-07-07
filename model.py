@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime, time
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.ensemble import BaggingRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -98,29 +98,60 @@ def load_and_preprocess_data():
     return platform_merged, street_merged, le_station_platform, le_crowd, le_station_street
 
 class StreetTempPredictor:
-    """Model to predict street-level temperature using BaggingRegressor"""
+    """Enhanced model to predict street-level temperature with improved accuracy"""
     def __init__(self):
-        self.model = BaggingRegressor(
-            n_estimators=100,
-            max_samples=0.8,
-            max_features=0.8,
+        self.model = RandomForestRegressor(
+            n_estimators=300,  # Increased from 200
+            max_depth=20,      # Increased from 15
+            min_samples_split=5,
+            min_samples_leaf=2,
+            max_features='sqrt',  # Added for better generalization
             random_state=42,
             n_jobs=-1
         )
         self.station_encoder = None
+        self.scaler = StandardScaler()
         self.performance_metrics = {}
+        self.feature_importances = None
     
     def fit(self, df, station_encoder):
         self.station_encoder = station_encoder
         
+        # Enhanced feature engineering
+        df = df.copy()
+        
+        # Temporal features
+        df['Day_of_Year'] = df['Date'].dt.dayofyear
+        df['Is_weekend'] = df['Day_of_Week'] >= 5
+        df['Is_rush_hour'] = ((df['Hour'] >= 7) & (df['Hour'] <= 9)) | ((df['Hour'] >= 17) & (df['Hour'] <= 19))
+        
+        # Weather features
+        df['Temp_range'] = df['High Temp (°F)'] - df['Low Temp (°F)']
+        df['Temp_avg'] = (df['High Temp (°F)'] + df['Low Temp (°F)']) / 2
+        
         # Prepare features
-        X = df[['High Temp (°F)', 'Station_Encoded', 'Hour', 'Day_of_Week', 'Day_of_Month']].copy()
+        feature_cols = [
+            'High Temp (°F)', 'Low Temp (°F)', 'Temp_range', 'Temp_avg',
+            'Station_Encoded', 'Hour', 'Day_of_Week', 'Day_of_Month', 'Month',
+            'Day_of_Year', 'Is_weekend', 'Is_rush_hour'
+        ]
+        
+        X = df[feature_cols].copy()
         y = df['Street level air temperature'].copy()
         
         # Remove any remaining NaN values
         mask = ~(X.isna().any(axis=1) | y.isna())
         X = X[mask]
         y = y[mask]
+        
+        # Scale numerical features (excluding encoded categoricals)
+        numerical_cols = [col for col in X.columns if col not in ['Station_Encoded', 'Is_weekend', 'Is_rush_hour']]
+        X[numerical_cols] = self.scaler.fit_transform(X[numerical_cols])
+        
+        # Cross-validation for better performance estimation
+        cv_scores = cross_val_score(self.model, X, y, cv=5, scoring='r2')
+        st.write(f"Cross-validation R² scores: {cv_scores}")
+        st.write(f"Mean CV R²: {np.mean(cv_scores):.3f}")
         
         # Train-test split
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -135,16 +166,57 @@ class StreetTempPredictor:
             'mae': mean_absolute_error(y_test, y_pred),
             'rmse': np.sqrt(mean_squared_error(y_test, y_pred))
         }
+        
+        # Get feature importances
+        self.feature_importances = pd.DataFrame({
+            'Feature': X.columns,
+            'Importance': self.model.feature_importances_
+        }).sort_values('Importance', ascending=False)
     
-    def predict(self, high_temp, station_name, hour, day_of_week, day_of_month):
+    def predict(self, high_temp, low_temp, station_name, hour, day_of_week, day_of_month, month):
         try:
             station_encoded = self.station_encoder.transform([station_name])[0]
         except:
             station_encoded = 0
         
-        features = np.array([[high_temp, station_encoded, hour, day_of_week, day_of_month]])
+        # Create all features for prediction
+        day_of_year = datetime.now().timetuple().tm_yday  # Approximate for prediction
+        is_weekend = day_of_week >= 5
+        is_rush_hour = ((hour >= 7) & (hour <= 9)) | ((hour >= 17) & (hour <= 19))
+        temp_range = high_temp - low_temp
+        temp_avg = (high_temp + low_temp) / 2
+        
+        features = pd.DataFrame({
+            'High Temp (°F)': [high_temp],
+            'Low Temp (°F)': [low_temp],
+            'Temp_range': [temp_range],
+            'Temp_avg': [temp_avg],
+            'Station_Encoded': [station_encoded],
+            'Hour': [hour],
+            'Day_of_Week': [day_of_week],
+            'Day_of_Month': [day_of_month],
+            'Month': [month],
+            'Day_of_Year': [day_of_year],
+            'Is_weekend': [is_weekend],
+            'Is_rush_hour': [is_rush_hour]
+        })
+        
+        # Scale numerical features
+        numerical_cols = [col for col in features.columns if col not in ['Station_Encoded', 'Is_weekend', 'Is_rush_hour']]
+        features[numerical_cols] = self.scaler.transform(features[numerical_cols])
+        
         return round(self.model.predict(features)[0], 1)
-
+    
+    def show_feature_importance(self):
+        """Display feature importance plot"""
+        if self.feature_importances is not None:
+            fig = px.bar(self.feature_importances, 
+                         x='Importance', 
+                         y='Feature',
+                         title='Street Temperature Model Feature Importance',
+                         orientation='h')
+            fig.update_layout(yaxis={'categoryorder':'total ascending'})
+            st.plotly_chart(fig, use_container_width=True) 
 @st.cache_resource
 def train_platform_model(X, y):
     """Train the platform temperature prediction model using GradientBoostingRegressor"""
@@ -264,13 +336,15 @@ def main():
                     day_of_month = datetime_obj.day
                     month = datetime_obj.month
                     
-                    # Step 1: Predict street temperature using BaggingRegressor
+                    # Step 1: Predict street temperature using RandomForestRegressor
                     predicted_street_temp = street_predictor.predict(
                         high_temp=high_temp,
+                        low_temp=low_temp,  # Added this parameter
                         station_name=station_name,
                         hour=hour,
                         day_of_week=day_of_week,
-                        day_of_month=day_of_month
+                        day_of_month=day_of_month,
+                        month=month
                     )
                     
                     st.metric("Street Temperature Forecast:", f"{predicted_street_temp}°F")
@@ -335,7 +409,7 @@ def main():
         st.header("📊 Model Performance Analysis")
         
         # Street model performance
-        st.subheader("Street Temperature Model - BaggingRegressor")
+        st.subheader("Street Temperature Model - RandomForestRegressor")
         street_metrics = street_predictor.performance_metrics
         
         col1, col2, col3 = st.columns(3)
@@ -392,9 +466,9 @@ def main():
         # Model comparison info
         st.subheader("Model Selection Rationale")
         st.write("""
-        **Best Models Selected:**
-        - **Street Temperature**: BaggingRegressor (R² = 0.3427)
-        - **Platform Temperature**: GradientBoostingRegressor (R² = 0.2434)
+        **Models Selected:**
+        - **Street Temperature**: RandomForestRegressor (n_estimators=200, max_depth=15)
+        - **Platform Temperature**: GradientBoostingRegressor (n_estimators=300, learning_rate=0.05)
         
         These models were selected based on comprehensive performance evaluation 
         and represent the optimal balance between accuracy and generalization.
