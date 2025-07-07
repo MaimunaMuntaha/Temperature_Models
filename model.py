@@ -193,7 +193,7 @@ def train_platform_model(X, y):
 
 def main():
     st.title("NYC Subway Forecast")
-    st.markdown("Predict both street-level and platform temperatures given a Platform below.") 
+    st.markdown("Predict both street-level and platform temperatures at a specified Platform.") 
     
     # Load and prepare data
     platform_df, street_df, le_station_platform, le_crowd, le_station_street = load_and_preprocess_data()
