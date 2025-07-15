@@ -104,7 +104,7 @@ try:
     model, le_station, platform_model = train_model(citywide_df, cuny_df)
 
     # User input
-    st.subheader("Forecast Street Temperature")
+    st.subheader("Forecast Street and Subway Platform Temperature")
     station_name = st.selectbox("Select Station", sorted(cuny_df['Station name'].dropna().unique()))
     date = st.date_input("Select Date", value=datetime.date.today())
     time = st.time_input("Select Time", value=datetime.time(12, 0))
@@ -112,7 +112,7 @@ try:
     high_temp = st.number_input("Citywide High Temp (°F)", value=85.0)
     low_temp = st.number_input("Citywide Low Temp (°F)", value=70.0)
 
-    if st.button("Predict Street Temperature"):
+    if st.button("Predict Platform and Street Temperature"):
         try:
             hour = pd.to_datetime(time.strftime('%H:%M:%S')).hour
             day_of_week = date.weekday()
