@@ -6,33 +6,30 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 import datetime
 
-# Load datasets
 @st.cache_data
 def load_data():
     citywide_df = pd.read_csv("citywide_weather.csv")
     cuny_df = pd.read_excel("CUNY_MTA.xlsx")
     return citywide_df, cuny_df
 
-# Preprocess and train models
 @st.cache_resource
 @st.cache_resource
 def train_model(citywide_df, cuny_df):
     cuny_df['Date'] = pd.to_datetime(cuny_df['Date'], errors='coerce')
     citywide_df['Date'] = pd.to_datetime(citywide_df['Date'])
 
-    # Convert temperatures
+    # Convert temperatures to numeric
     cuny_df['Street level air temperature'] = pd.to_numeric(cuny_df['Street level air temperature'], errors='coerce')
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
     cuny_df = cuny_df.dropna(subset=['Street level air temperature'])
 
-    # Merge main weather data
+    # Merge main weather data given the Date
     merged_df = pd.merge(cuny_df, citywide_df, on='Date', how='inner')
 
-    # Add time-based features
     merged_df['Hour'] = pd.to_datetime(
         merged_df['Time for street level data collection'], format='%I:%M:%S %p', errors='coerce'
     ).dt.hour
-
+    # Categorize hour into a time period 
     def time_category(hour):
         if pd.isna(hour): return np.nan
         if hour < 11:
@@ -47,10 +44,8 @@ def train_model(citywide_df, cuny_df):
     merged_df['Day_of_Week'] = merged_df['Date'].dt.dayofweek
     le_station = LabelEncoder()
     merged_df['Station_encoded'] = le_station.fit_transform(merged_df['Station name'])
-
-    # -----------------------
-    # Train street-level model
-    # -----------------------
+ 
+    # --- Train street-level model --- 
     model_df = merged_df.copy()
     street_features = pd.get_dummies(model_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Time_Category']], drop_first=True)
     street_target = model_df['Street level air temperature']
@@ -59,12 +54,10 @@ def train_model(citywide_df, cuny_df):
     )
     street_model = RandomForestRegressor(n_estimators=200, random_state=42)
     street_model.fit(X_train_street, y_train_street)
+ 
+    # --- Train platform-level model --- 
 
-    # -----------------------
-    # Train platform-level model
-    # -----------------------
-
-    # Merge previous day's weather
+    # Merge previous day's weather with current day's
     citywide_df['Prev_Date'] = citywide_df['Date'] + pd.Timedelta(days=1)
     prev_weather = citywide_df[['Date', 'High Temp (°F)', 'Low Temp (°F)']].rename(
         columns={
@@ -95,15 +88,12 @@ def train_model(citywide_df, cuny_df):
 
     return street_model, le_station, platform_model
 
-
-# Streamlit app
+# GUI STreamlit
 st.title("NYC MTA Temperature Forecast")
 
 try:
     citywide_df, cuny_df = load_data()
-    model, le_station, platform_model = train_model(citywide_df, cuny_df)
-
-    # User input
+    model, le_station, platform_model = train_model(citywide_df, cuny_df) 
     st.subheader("Forecast Street and Subway Platform Temperature")
     station_name = st.selectbox("Select Station", sorted(cuny_df['Station name'].dropna().unique()))
     date = st.date_input("Select Date", value=datetime.date.today())
