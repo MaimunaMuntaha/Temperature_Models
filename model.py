@@ -13,30 +13,28 @@ def load_data():
     return citywide_df, cuny_df
 
 @st.cache_resource
-@st.cache_resource
-
-@st.cache_resource
 def train_model(citywide_df, cuny_df):
     cuny_df['Date'] = pd.to_datetime(cuny_df['Date'], errors='coerce')
     citywide_df['Date'] = pd.to_datetime(citywide_df['Date'])
 
-    # Convert temperatures/humidity to numeric
+    # Convert to numeric
     cuny_df['Street level air temperature'] = pd.to_numeric(cuny_df['Street level air temperature'], errors='coerce')
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
-    cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')  ### NEW
+    cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')
 
-    cuny_df = cuny_df.dropna(subset=['Street level air temperature', 'Street level relative humidity'])   ### NEW
+    # Drop rows missing targets
+    cuny_df = cuny_df.dropna(subset=['Street level air temperature', 'Street level relative humidity'])
 
-    # Merge main weather data given the Date
+    # Merge with citywide
     merged_df = pd.merge(cuny_df, citywide_df, on='Date', how='inner')
 
-    # Process hour and categories as before
+    # Parse hour from street-level time
     merged_df['Hour'] = pd.to_datetime(
         merged_df['Time for street level data collection'], format='%I:%M:%S %p', errors='coerce'
     ).dt.hour
 
-    # Categorize hour into a time period 
-    time_categories = ['morning', 'afternoon', 'evening', 'night']  ### ENSURE all used
+    # Define time categories
+    time_categories = ['morning', 'afternoon', 'evening', 'night']
     def time_category(hour):
         if pd.isna(hour): return np.nan
         if hour < 11:
@@ -48,29 +46,34 @@ def train_model(citywide_df, cuny_df):
         return 'night'
 
     merged_df['Time_Category'] = merged_df['Hour'].apply(time_category)
-    merged_df['Time_Category'] = pd.Categorical(merged_df['Time_Category'], categories=time_categories)   ### NEW
-
+    merged_df['Time_Category'] = pd.Categorical(merged_df['Time_Category'], categories=time_categories)
     merged_df['Day_of_Week'] = merged_df['Date'].dt.dayofweek
+
     le_station = LabelEncoder()
     merged_df['Station_encoded'] = le_station.fit_transform(merged_df['Station name'])
 
-    # --- Train street-level model --- 
-    model_df = merged_df.copy()
-    street_features = model_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 
-                                'Time_Category', 'Street level relative humidity']]   ### ADD humidity
+    # ------ Humidity Prediction Model ------
+    humidity_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Time_Category']].copy()
+    humidity_features['Time_Category'] = pd.Categorical(humidity_features['Time_Category'], categories=time_categories)
+    humidity_features = pd.get_dummies(humidity_features, columns=['Time_Category'], drop_first=False)
+    humidity_target = merged_df['Street level relative humidity']
+    X_train_h, X_test_h, y_train_h, y_test_h = train_test_split(humidity_features, humidity_target, test_size=0.2, random_state=42)
+    humidity_model = RandomForestRegressor(n_estimators=100, random_state=42)
+    humidity_model.fit(X_train_h, y_train_h)
 
-    street_features = pd.get_dummies(street_features, columns=['Time_Category'], drop_first=False)  ### Robust
-
-    street_target = model_df['Street level air temperature']
+    # ------ Street-level Temperature Model ------
+    street_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Time_Category', 'Street level relative humidity']].copy()
+    street_features['Time_Category'] = pd.Categorical(street_features['Time_Category'], categories=time_categories)
+    street_features = pd.get_dummies(street_features, columns=['Time_Category'], drop_first=False)
+    street_target = merged_df['Street level air temperature']
 
     X_train_street, X_test_street, y_train_street, y_test_street = train_test_split(
         street_features, street_target, test_size=0.2, random_state=42
     )
     street_model = RandomForestRegressor(n_estimators=200, random_state=42)
     street_model.fit(X_train_street, y_train_street)
- 
-    # --- Platform-level model, keep unchanged ---
 
+    # ------ Platform-level Model ------
     citywide_df['Prev_Date'] = citywide_df['Date'] + pd.Timedelta(days=1)
     prev_weather = citywide_df[['Date', 'High Temp (°F)', 'Low Temp (°F)']].rename(
         columns={
@@ -90,8 +93,8 @@ def train_model(citywide_df, cuny_df):
         'Day_of_Week',
         'Prev_High',
         'Prev_Low'
-    ]]
-    platform_features['Time_Category'] = pd.Categorical(platform_features['Time_Category'], categories=time_categories)  ### Ensure robust
+    ]].copy()
+    platform_features['Time_Category'] = pd.Categorical(platform_features['Time_Category'], categories=time_categories)
     platform_features = pd.get_dummies(platform_features, columns=['Time_Category'], drop_first=True)
     platform_target = platform_df['Platform level air temperature']
 
@@ -99,13 +102,17 @@ def train_model(citywide_df, cuny_df):
     platform_model = RandomForestRegressor(n_estimators=200, random_state=42)
     platform_model.fit(X_train_pf, y_train_pf)
 
-    return street_model, le_station, platform_model, time_categories   
+    return (street_model, le_station, platform_model, time_categories, 
+            humidity_model, humidity_features.columns)
 
-# GUI STreamlit
+# ------------------- STREAMLIT APP ------------------
+
 st.title("NYC MTA Temperature Forecast")
+
 try:
     citywide_df, cuny_df = load_data()
-    model, le_station, platform_model, time_categories = train_model(citywide_df, cuny_df)  ### Update unpack
+    (model, le_station, platform_model, time_categories, 
+     humidity_model, humidity_feature_cols) = train_model(citywide_df, cuny_df) 
 
     st.subheader("Forecast Street and Subway Platform Temperature")
     station_name = st.selectbox("Select Station", sorted(cuny_df['Station name'].dropna().unique()))
@@ -114,7 +121,6 @@ try:
 
     high_temp = st.number_input("Citywide High Temp (°F)", value=85.0)
     low_temp = st.number_input("Citywide Low Temp (°F)", value=70.0)
-    street_humidity = st.number_input("Street Level Relative Humidity (%)", value=60.0)   ### NEW
 
     if st.button("Predict Platform and Street Temperature"):
         try:
@@ -133,24 +139,37 @@ try:
 
             time_cat = time_category(hour)
 
-            # Ensure all possible categories present
+            # --------- Predict Humidity First ---------
+            humidity_input = pd.DataFrame({
+                'High Temp (°F)': [high_temp],
+                'Low Temp (°F)': [low_temp],
+                'Day_of_Week': [day_of_week],
+                'Station_encoded': [station_encoded],
+                'Time_Category': [time_cat]
+            })
+            humidity_input['Time_Category'] = pd.Categorical(humidity_input['Time_Category'], categories=time_categories)
+            humidity_input = pd.get_dummies(humidity_input, columns=['Time_Category'], drop_first=False)
+            humidity_input = humidity_input.reindex(columns=humidity_feature_cols, fill_value=0)
+
+            predicted_humidity = humidity_model.predict(humidity_input)[0]
+
+            # --------- Predict Street-Level Temp ---------
             input_df = pd.DataFrame({
                 'High Temp (°F)': [high_temp],
                 'Low Temp (°F)': [low_temp],
                 'Day_of_Week': [day_of_week],
                 'Station_encoded': [station_encoded],
                 'Time_Category': [time_cat],
-                'Street level relative humidity': [street_humidity]   ### NEW
+                'Street level relative humidity': [predicted_humidity]
             })
-
             input_df['Time_Category'] = pd.Categorical(input_df['Time_Category'], categories=time_categories)
             input_features = pd.get_dummies(input_df, columns=['Time_Category'], drop_first=False)
             input_features = input_features.reindex(columns=model.feature_names_in_, fill_value=0)
 
             prediction = model.predict(input_features)[0]
-            st.success(f"Predicted Street-Level Temperature: {prediction:.2f} °F")
+            st.success(f"Predicted Street-Level Temperature: {prediction:.2f} °F\n(Predicted Humidity: {predicted_humidity:.1f}%)")
 
-            # ---- Platform Temperature Prediction ----
+            # --------- Predict Platform-Level Temp ---------
             platform_input_df = pd.DataFrame({
                 'Street level air temperature': [prediction],
                 'Station_encoded': [station_encoded],
@@ -166,6 +185,7 @@ try:
 
         except Exception as e:
             st.error(f"Prediction failed: {e}")
+
 except ValueError as ve:
     st.error(str(ve))
 except Exception as e:
