@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 import datetime
 
+# Load the files, clean the data, and merge them into one for ease of training
 @st.cache_data
 def load_data():
     citywide_df = pd.read_csv("citywide_weather.csv")
@@ -22,18 +23,13 @@ def train_model(citywide_df, cuny_df):
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
     cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')
 
-    # Drop rows missing targets
-    cuny_df = cuny_df.dropna(subset=['Street level air temperature', 'Street level relative humidity'])
-
     # Merge with citywide
     merged_df = pd.merge(cuny_df, citywide_df, on='Date', how='inner')
 
-    # Parse hour from street-level time
+    # Get the hour from the time and define categories of day for feature engineering
     merged_df['Hour'] = pd.to_datetime(
         merged_df['Time for street level data collection'], format='%I:%M:%S %p', errors='coerce'
-    ).dt.hour
-
-    # Define time categories
+    ).dt.hour 
     time_categories = ['morning', 'afternoon', 'evening', 'night']
     def time_category(hour):
         if pd.isna(hour): return np.nan
@@ -52,7 +48,7 @@ def train_model(citywide_df, cuny_df):
     le_station = LabelEncoder()
     merged_df['Station_encoded'] = le_station.fit_transform(merged_df['Station name'])
 
-    # ------ Humidity Prediction Model ------
+    # Predict Humidity given features: Citywide high temp, Citywide low temp, Day of week, Encoded station, Time category (one-hot encoded)
     humidity_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Time_Category']].copy()
     humidity_features['Time_Category'] = pd.Categorical(humidity_features['Time_Category'], categories=time_categories)
     humidity_features = pd.get_dummies(humidity_features, columns=['Time_Category'], drop_first=False)
@@ -61,7 +57,7 @@ def train_model(citywide_df, cuny_df):
     humidity_model = RandomForestRegressor(n_estimators=100, random_state=42)
     humidity_model.fit(X_train_h, y_train_h)
 
-    # ------ Street-level Temperature Model ------
+    # Predict Street-level Temperature given features High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Time_Category', 'Street level relative humidity
     street_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Time_Category', 'Street level relative humidity']].copy()
     street_features['Time_Category'] = pd.Categorical(street_features['Time_Category'], categories=time_categories)
     street_features = pd.get_dummies(street_features, columns=['Time_Category'], drop_first=False)
@@ -73,7 +69,8 @@ def train_model(citywide_df, cuny_df):
     street_model = RandomForestRegressor(n_estimators=200, random_state=42)
     street_model.fit(X_train_street, y_train_street)
 
-    # ------ Platform-level Model ------
+    # Predict Platform-level Temperature 
+    # merge pdfs for prev day's high and low temps
     citywide_df['Prev_Date'] = citywide_df['Date'] + pd.Timedelta(days=1)
     prev_weather = citywide_df[['Date', 'High Temp (°F)', 'Low Temp (°F)']].rename(
         columns={
@@ -83,9 +80,8 @@ def train_model(citywide_df, cuny_df):
         }
     )
 
-    platform_df = pd.merge(merged_df, prev_weather, left_on='Date', right_on='Prev_Date', how='left')
-    platform_df = platform_df.dropna(subset=['Platform level air temperature'])
-
+    platform_df = pd.merge(merged_df, prev_weather, left_on='Date', right_on='Prev_Date', how='left') 
+    # Use these features to train model
     platform_features = platform_df[[
         'Street level air temperature',
         'Station_encoded',
@@ -105,8 +101,7 @@ def train_model(citywide_df, cuny_df):
     return (street_model, le_station, platform_model, time_categories, 
             humidity_model, humidity_features.columns)
 
-# ------------------- STREAMLIT APP ------------------
-
+# Streamlit
 st.title("NYC MTA Temperature Forecast")
 
 try:
