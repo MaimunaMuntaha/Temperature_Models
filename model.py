@@ -22,6 +22,7 @@ def train_model(citywide_df, cuny_df):
     cuny_df['Street level air temperature'] = pd.to_numeric(cuny_df['Street level air temperature'], errors='coerce')
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
     cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')
+    cuny_df = cuny_df.dropna(subset=['Street level air temperature', 'Street level relative humidity'])
 
     # Merge with citywide
     merged_df = pd.merge(cuny_df, citywide_df, on='Date', how='inner')
@@ -81,6 +82,8 @@ def train_model(citywide_df, cuny_df):
     )
 
     platform_df = pd.merge(merged_df, prev_weather, left_on='Date', right_on='Prev_Date', how='left') 
+    platform_df = platform_df.dropna(subset=['Platform level air temperature'])
+
     # Use these features to train model
     platform_features = platform_df[[
         'Street level air temperature',
