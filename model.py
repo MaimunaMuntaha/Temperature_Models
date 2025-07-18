@@ -142,7 +142,7 @@ try:
                 'Station_encoded': [station_encoded],
                 'Hour': [hour],
                 'Day_of_Week': [day_of_week],
-                'Street level relative humidity': [humidity_input]
+                'Street level relative humidity': [predicted_humidity]
             })
             offset_input_df = offset_input_df.reindex(columns=offset_model.feature_names_in_, fill_value=0)
             offset_pred = offset_model.predict(offset_input_df)[0]
