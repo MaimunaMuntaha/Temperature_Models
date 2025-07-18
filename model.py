@@ -146,7 +146,7 @@ try:
             })
             offset_input_df = offset_input_df.reindex(columns=offset_model.feature_names_in_, fill_value=0)
             offset_pred = offset_model.predict(offset_input_df)[0]
-            offset_pred_clipped = np.clip(offset_pred, -10, 10)
+            offset_pred_clipped = np.clip(offset_pred, -10, 15)
             street_level_temp_pred = high_temp + offset_pred_clipped
             st.success(f"Predicted Street-Level Temperature: {street_level_temp_pred:.2f} °F\n(Predicted Offset: {offset_pred_clipped:+.2f} °F, Predicted Humidity: {predicted_humidity:.1f}%)")
  
