@@ -146,9 +146,10 @@ try:
             })
             offset_input_df = offset_input_df.reindex(columns=offset_model.feature_names_in_, fill_value=0)
             offset_pred = offset_model.predict(offset_input_df)[0]
-            street_level_temp_pred = high_temp + offset_pred
-            st.success(f"Predicted Street-Level Temperature: {street_level_temp_pred:.2f} °F\n(Predicted Offset: {offset_pred:+.2f} °F, Predicted Humidity: {predicted_humidity:.1f}%)")
-
+            offset_pred_clipped = np.clip(offset_pred, -10, 10)
+            street_level_temp_pred = high_temp + offset_pred_clipped
+            st.success(f"Predicted Street-Level Temperature: {street_level_temp_pred:.2f} °F\n(Predicted Offset: {offset_pred_clipped:+.2f} °F, Predicted Humidity: {predicted_humidity:.1f}%)")
+ 
             # --- Platform-level temperature using platform offset model ---
             platform_offset_input_df = pd.DataFrame({
                 'Station_encoded': [station_encoded],
