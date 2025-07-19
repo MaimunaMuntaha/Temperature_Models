@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 @st.cache_data
 def load_data():
-    citywide_df = pd.read_csv("citywide_weather.csv")
+    citywide_df = pd.read_csv("citywide.csv")
     cuny_df = pd.read_excel("CUNY_MTA.xlsx")
     return citywide_df, cuny_df
 
