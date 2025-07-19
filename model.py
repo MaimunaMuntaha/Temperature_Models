@@ -20,7 +20,7 @@ def adjusted_r2(r2, n, k):
 def train_model(citywide_df, cuny_df):
     #data cleaning and preprocessing
     cuny_df['Date'] = pd.to_datetime(cuny_df['Date'], errors='coerce')
-    citywide_df['Date'] = pd.to_datetime(citywide_df['Date'])
+    citywide_df['Date'] = pd.to_datetime(citywide_df['Date'], errors='coerce')
     cuny_df['Street level air temperature'] = pd.to_numeric(cuny_df['Street level air temperature'], errors='coerce')
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
     cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')
