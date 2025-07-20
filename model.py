@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 @st.cache_data
 def load_data():
-    citywide_df = pd.read_csv("citywide.csv")
+    citywide_df = pd.read_csv("citywide_weather.csv")
     cuny_df = pd.read_excel("CUNY_MTA.xlsx")
     return citywide_df, cuny_df
 
@@ -18,15 +18,27 @@ def adjusted_r2(r2, n, k):
 
 @st.cache_resource
 def train_model(citywide_df, cuny_df):
-    #data cleaning and preprocessing
+    # Data cleaning and preprocessing
     cuny_df['Date'] = pd.to_datetime(cuny_df['Date'], errors='coerce')
     citywide_df['Date'] = pd.to_datetime(citywide_df['Date'], errors='coerce')
+
+    # Convert columns to numeric
     cuny_df['Street level air temperature'] = pd.to_numeric(cuny_df['Street level air temperature'], errors='coerce')
+    cuny_df['Street level air temperature - Sunny conditions (complete only if there is no shady spot near the subway entrance)'] = pd.to_numeric(
+        cuny_df['Street level air temperature - Sunny conditions (complete only if there is no shady spot near the subway entrance)'], errors='coerce'
+    )
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
     cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')
-    
+
+    # Fill missing street level temp with sunny condition value if available
+    cuny_df['Street level air temperature'] = cuny_df['Street level air temperature'].combine_first(
+        cuny_df['Street level air temperature - Sunny conditions (complete only if there is no shady spot near the subway entrance)']
+    )
+
+    # Drop rows where essential features are still missing
     cuny_df = cuny_df.dropna(subset=['Street level air temperature', 'Street level relative humidity'])
-    
+ 
+
     #merge pdfs
     merged_df = pd.merge(cuny_df, citywide_df, on='Date', how='inner')
     merged_df['Hour'] = pd.to_datetime(
