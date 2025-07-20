@@ -30,14 +30,13 @@ def train_model(citywide_df, cuny_df):
     cuny_df['Platform level air temperature'] = pd.to_numeric(cuny_df['Platform level air temperature'], errors='coerce')
     cuny_df['Street level relative humidity'] = pd.to_numeric(cuny_df['Street level relative humidity'], errors='coerce')
 
-    # Fill missing street level temp with sunny condition value if available
+    # If there isn't a street level temp, then fill missing street level temp with sunny condition value if available
     cuny_df['Street level air temperature'] = cuny_df['Street level air temperature'].combine_first(
         cuny_df['Street level air temperature - Sunny conditions (complete only if there is no shady spot near the subway entrance)']
     )
 
     # Drop rows where essential features are still missing
     cuny_df = cuny_df.dropna(subset=['Street level air temperature', 'Street level relative humidity'])
- 
 
     #merge pdfs
     merged_df = pd.merge(cuny_df, citywide_df, on='Date', how='inner')
