@@ -73,6 +73,7 @@ def train_model(citywide_df, cuny_df):
     r2_offset = offset_model.score(X_test_offset, y_test_offset)
     adj_r2_offset = adjusted_r2(r2_offset, X_test_offset.shape[0], X_test_offset.shape[1])
     y_pred_offset = offset_model.predict(X_test_offset)
+    
     citywide_df['Prev_Date'] = citywide_df['Date'] + pd.Timedelta(days=1)
     prev_weather = citywide_df[['Date', 'High Temp (°F)', 'Low Temp (°F)']].rename(
         columns={
@@ -82,18 +83,29 @@ def train_model(citywide_df, cuny_df):
         }
     )
 
+    platform_daily = merged_df.groupby(['Date', 'Station name'])['Platform level air temperature'].mean().reset_index()
+    platform_daily.rename(columns={'Platform level air temperature': 'Prev_Platform_Temp'}, inplace=True)
+    platform_daily['Prev_Date'] = platform_daily['Date'] + pd.Timedelta(days=1)
+    prev_platform = platform_daily[['Station name', 'Prev_Date', 'Prev_Platform_Temp']]
+
     #predict platform OFFSET W RandomForestRegressor
-    platform_df = pd.merge(merged_df, prev_weather, left_on='Date', right_on='Prev_Date', how='left') 
+    platform_df = pd.merge(merged_df, prev_weather, left_on='Date', right_on='Prev_Date', how='left')
+    platform_df = pd.merge(platform_df, prev_platform, left_on=['Date', 'Station name'], right_on=['Prev_Date', 'Station name'], how='left', suffixes=('', '_prev_platform'))
     platform_df = platform_df.dropna(subset=['Platform level air temperature'])
+    
     platform_features = platform_df[[
         'Street level air temperature',
         'Station_encoded',
         'Hour',
         'Day_of_Week',
         'Prev_High',
-        'Prev_Low'
+        'Prev_Low',
+        'Prev_Platform_Temp'
     ]].copy()
-    platform_target = platform_df['Platform level air temperature']
+    
+    platform_features = platform_features.dropna()
+    platform_target = platform_df.loc[platform_features.index, 'Platform level air temperature']
+    
     X_train_pf, X_test_pf, y_train_pf, y_test_pf = train_test_split(platform_features, platform_target, test_size=0.2, random_state=42)
     platform_model = RandomForestRegressor(n_estimators=200, random_state=42)
     platform_model.fit(X_train_pf, y_train_pf)
@@ -101,9 +113,20 @@ def train_model(citywide_df, cuny_df):
     r2_p = platform_model.score(X_test_pf, y_test_pf)
     adj_r2_p = adjusted_r2(r2_p, X_test_pf.shape[0], X_test_pf.shape[1])
 
-    platform_df['Platform_Offset'] = platform_df['Platform level air temperature'] - platform_df['Street level air temperature']
-    platform_offset_features = platform_df[['Station_encoded', 'Hour', 'Day_of_Week', 'Street level air temperature', 'Prev_High', 'Prev_Low']].copy()
-    platform_offset_target = platform_df['Platform_Offset']
+    platform_df_offset = platform_df.loc[platform_features.index].copy()
+    platform_df_offset['Platform_Offset'] = platform_df_offset['Platform level air temperature'] - platform_df_offset['Street level air temperature']
+    
+    platform_offset_features = platform_df_offset[[
+        'Station_encoded', 
+        'Hour', 
+        'Day_of_Week', 
+        'Street level air temperature', 
+        'Prev_High', 
+        'Prev_Low',
+        'Prev_Platform_Temp'
+    ]].copy()
+    
+    platform_offset_target = platform_df_offset['Platform_Offset']
     X_train_pf_off, X_test_pf_off, y_train_pf_off, y_test_pf_off = train_test_split(
         platform_offset_features, platform_offset_target, test_size=0.2, random_state=42)
     platform_offset_model = RandomForestRegressor(n_estimators=200, random_state=42)
@@ -117,7 +140,8 @@ def train_model(citywide_df, cuny_df):
         humidity_model, humidity_features.columns,
         adj_r2_h, adj_r2_offset, adj_r2_p,
         y_test_offset, y_pred_offset, X_test_offset,
-        platform_offset_model, adj_r2_pf_off, y_test_pf_off, y_pred_pf_off, X_test_pf_off)
+        platform_offset_model, adj_r2_pf_off, y_test_pf_off, y_pred_pf_off, X_test_pf_off,
+        platform_daily)
 
 #Streamlit -- not necessary for modelling website/leaflit
 st.title("NYC MTA Temperature Forecast")
@@ -128,7 +152,8 @@ try:
     humidity_model, humidity_feature_cols,
     adj_r2_h, adj_r2_offset, adj_r2_p,
     y_test_offset, y_pred_offset, X_test_offset,
-    platform_offset_model, adj_r2_pf_off, y_test_pf_off, y_pred_pf_off, X_test_pf_off) = train_model(citywide_df, cuny_df)
+    platform_offset_model, adj_r2_pf_off, y_test_pf_off, y_pred_pf_off, X_test_pf_off,
+    platform_daily) = train_model(citywide_df, cuny_df)
  
     station_name = st.selectbox("Select Station", sorted(cuny_df['Station name'].dropna().unique()))
     date = st.date_input("Select Date", value=datetime.date.today())
@@ -137,6 +162,7 @@ try:
     low_temp = st.number_input("Citywide Low Temp (°F)", value=70.0)
     prev_high = st.number_input("Previous Day High Temp (°F)", value=85.0)
     prev_low = st.number_input("Previous Day Low Temp (°F)", value=70.0)
+    prev_platform_temp = st.number_input("Previous Day Platform Temp (°F)", value=87.0)
 
     if st.button("Predict Platform and Street Temperature"):
         try:
@@ -177,7 +203,8 @@ try:
                 'Day_of_Week': [day_of_week],
                 'Street level air temperature': [street_level_temp_pred],
                 'Prev_High': [prev_high],
-                'Prev_Low': [prev_low]
+                'Prev_Low': [prev_low],
+                'Prev_Platform_Temp': [prev_platform_temp]
             })
             platform_offset_input_df = platform_offset_input_df.reindex(columns=platform_offset_model.feature_names_in_, fill_value=0)
             platform_offset_pred = platform_offset_model.predict(platform_offset_input_df)[0]
