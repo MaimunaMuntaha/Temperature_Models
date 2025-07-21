@@ -103,8 +103,8 @@ def train_model(citywide_df, cuny_df):
         'Prev_Platform_Temp'
     ]].copy()
     
-    platform_features = platform_features.dropna()
-    platform_target = platform_df.loc[platform_features.index, 'Platform level air temperature']
+    platform_features['Prev_Platform_Temp'] = platform_features['Prev_Platform_Temp'].fillna(platform_features['Street level air temperature'])
+    platform_target = platform_df['Platform level air temperature']
     
     X_train_pf, X_test_pf, y_train_pf, y_test_pf = train_test_split(platform_features, platform_target, test_size=0.2, random_state=42)
     platform_model = RandomForestRegressor(n_estimators=200, random_state=42)
@@ -113,10 +113,9 @@ def train_model(citywide_df, cuny_df):
     r2_p = platform_model.score(X_test_pf, y_test_pf)
     adj_r2_p = adjusted_r2(r2_p, X_test_pf.shape[0], X_test_pf.shape[1])
 
-    platform_df_offset = platform_df.loc[platform_features.index].copy()
-    platform_df_offset['Platform_Offset'] = platform_df_offset['Platform level air temperature'] - platform_df_offset['Street level air temperature']
+    platform_df['Platform_Offset'] = platform_df['Platform level air temperature'] - platform_df['Street level air temperature']
     
-    platform_offset_features = platform_df_offset[[
+    platform_offset_features = platform_df[[
         'Station_encoded', 
         'Hour', 
         'Day_of_Week', 
@@ -126,7 +125,9 @@ def train_model(citywide_df, cuny_df):
         'Prev_Platform_Temp'
     ]].copy()
     
-    platform_offset_target = platform_df_offset['Platform_Offset']
+    platform_offset_features['Prev_Platform_Temp'] = platform_offset_features['Prev_Platform_Temp'].fillna(platform_offset_features['Street level air temperature'])
+    
+    platform_offset_target = platform_df['Platform_Offset']
     X_train_pf_off, X_test_pf_off, y_train_pf_off, y_test_pf_off = train_test_split(
         platform_offset_features, platform_offset_target, test_size=0.2, random_state=42)
     platform_offset_model = RandomForestRegressor(n_estimators=200, random_state=42)
