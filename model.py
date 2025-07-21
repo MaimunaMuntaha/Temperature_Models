@@ -163,7 +163,7 @@ try:
     low_temp = st.number_input("Citywide Low Temp (°F)", value=70.0)
     prev_high = st.number_input("Previous Day High Temp (°F)", value=85.0)
     prev_low = st.number_input("Previous Day Low Temp (°F)", value=70.0)
-    prev_platform_temp = st.number_input("Previous Day Platform Temp (°F)", value=87.0)
+
 
     if st.button("Predict Platform and Street Temperature"):
         try:
@@ -198,6 +198,7 @@ try:
             st.success(f"Predicted Street-Level Temperature: {street_level_temp_pred:.2f} °F\n(Predicted Offset: {offset_pred_clipped:+.2f} °F, Predicted Humidity: {predicted_humidity:.1f}%)")
  
             # --- Platform-level temperature using platform offset model ---
+            prev_platform_temp = high_temp + 2.0
             platform_offset_input_df = pd.DataFrame({
                 'Station_encoded': [station_encoded],
                 'Hour': [hour],
