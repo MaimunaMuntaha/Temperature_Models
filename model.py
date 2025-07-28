@@ -220,13 +220,13 @@ try:
             true_temp = y_test_offset + np.full_like(y_test_offset, high_temp)
             pred_temp = y_pred_offset + np.full_like(y_test_offset, high_temp)
             
-            rmse_offset = mean_squared_error(true_temp, pred_temp, squared=False)
+            rmse_offset = np.sqrt(mean_squared_error(true_temp, pred_temp))
             mae_offset = mean_absolute_error(true_temp, pred_temp)
 
             true_pf_temp = y_test_pf_off + X_test_pf_off['Street level air temperature'].values
             pred_pf_temp = y_pred_pf_off + X_test_pf_off['Street level air temperature'].values
             
-            rmse_pf = mean_squared_error(true_pf_temp, pred_pf_temp, squared=False)
+            rmse_pf = np.sqrt(mean_squared_error(true_pf_temp, pred_pf_temp))
             mae_pf = mean_absolute_error(true_pf_temp, pred_pf_temp)
             st.sidebar.write(f"Street Temp RMSE: {rmse_offset:.2f} °F")
             st.sidebar.write(f"Street Temp MAE: {mae_offset:.2f} °F")
