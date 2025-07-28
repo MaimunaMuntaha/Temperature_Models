@@ -94,11 +94,9 @@ def train_model(citywide_df, cuny_df):
         'Hour',
         'Day_of_Week',
         'Prev_High',
-        'Prev_Low',
-        'Prev_Platform_Temp'
+        'Prev_Low', 
     ]].copy()
 
-    platform_features['Prev_Platform_Temp'] = platform_features['Prev_Platform_Temp'].fillna(platform_features['Street level air temperature'])
     platform_target = platform_df['Platform level air temperature']
 
     X_train_pf, X_test_pf, y_train_pf, y_test_pf = train_test_split(platform_features, platform_target, test_size=0.2, random_state=42)
@@ -116,12 +114,9 @@ def train_model(citywide_df, cuny_df):
         'Day_of_Week', 
         'Street level air temperature', 
         'Prev_High', 
-        'Prev_Low',
-        'Prev_Platform_Temp'
+        'Prev_Low', 
     ]].copy()
-
-    platform_offset_features['Prev_Platform_Temp'] = platform_offset_features['Prev_Platform_Temp'].fillna(platform_offset_features['Street level air temperature'])
-
+ 
     platform_offset_target = platform_df['Platform_Offset']
     X_train_pf_off, X_test_pf_off, y_train_pf_off, y_test_pf_off = train_test_split(
         platform_offset_features, platform_offset_target, test_size=0.2, random_state=42)
@@ -192,16 +187,14 @@ try:
             offset_pred_clipped = np.clip(offset_pred, -3, 15)
             street_level_temp_pred = high_temp + offset_pred_clipped
             st.success(f"Predicted Street-Level Temperature: {street_level_temp_pred:.2f} °F\n(Predicted Offset: {offset_pred_clipped:+.2f} °F, Predicted Humidity: {predicted_humidity:.1f}%)")
-
-            prev_platform_temp = high_temp + 2.0
+ 
             platform_offset_input_df = pd.DataFrame({
                 'Station_encoded': [station_encoded],
                 'Hour': [hour],
                 'Day_of_Week': [day_of_week],
                 'Street level air temperature': [street_level_temp_pred],
                 'Prev_High': [prev_high],
-                'Prev_Low': [prev_low],
-                'Prev_Platform_Temp': [prev_platform_temp]
+                'Prev_Low': [prev_low], 
             })
             platform_offset_input_df = platform_offset_input_df.reindex(columns=platform_offset_model.feature_names_in_, fill_value=0)
             platform_offset_pred = platform_offset_model.predict(platform_offset_input_df)[0]
