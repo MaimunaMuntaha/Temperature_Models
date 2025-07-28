@@ -156,7 +156,7 @@ try:
     platform_offset_model, adj_r2_pf_off, y_test_pf_off, y_pred_pf_off, X_test_pf_off,
     platform_daily) = train_model(citywide_df, cuny_df)
  
-    station_name = st.selectbox("Select Station", sorted(cuny_df['gtfs_stop_id'].dropna().unique()))
+    station_name = st.selectbox("Select Station", sorted(cuny_df['Station name'].dropna().unique()))
     date = st.date_input("Select Date", value=datetime.date.today())
     time = st.time_input("Select Time", value=datetime.time(12, 0))
     high_temp = st.number_input("Citywide High Temp (°F)", value=85.0)
