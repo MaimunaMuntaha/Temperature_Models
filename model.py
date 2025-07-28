@@ -17,10 +17,11 @@ def adjusted_r2(r2, n, k):
     return 1 - (1 - r2) * ((n - 1) / (n - k - 1))
 
 @st.cache_resource
+#MODEL to predict platform AND street level is from lines 21-139
 def train_model(citywide_df, cuny_df):
     cuny_df['Date'] = pd.to_datetime(cuny_df['Date'], errors='coerce')
     citywide_df['Date'] = pd.to_datetime(citywide_df['Date'], errors='coerce')
-
+    # clean sheet data to be embedded for model params easily
     cuny_df['Street level air temperature'] = pd.to_numeric(cuny_df['Street level air temperature'], errors='coerce')
     cuny_df['Street level air temperature - Sunny conditions (complete only if there is no shady spot near the subway entrance)'] = pd.to_numeric(
         cuny_df['Street level air temperature - Sunny conditions (complete only if there is no shady spot near the subway entrance)'], errors='coerce'
@@ -44,7 +45,8 @@ def train_model(citywide_df, cuny_df):
     merged_df['Station_encoded'] = le_station.fit_transform(merged_df['gtfs_stop_id'])
 
     station_to_gtfs = merged_df[['Station name', 'gtfs_stop_id']].drop_duplicates().set_index('Station name')['gtfs_stop_id'].to_dict()
-
+    
+    #train humidity model
     humidity_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Hour', 'Month']].copy()
     humidity_target = merged_df['Street level relative humidity']
     X_train_h, X_test_h, y_train_h, y_test_h = train_test_split(humidity_features, humidity_target, test_size=0.2, random_state=42)
@@ -135,7 +137,8 @@ def train_model(citywide_df, cuny_df):
             y_test_offset, y_pred_offset, X_test_offset,
             platform_offset_model, adj_r2_pf_off, y_test_pf_off, y_pred_pf_off, X_test_pf_off,
             platform_daily, station_to_gtfs)
-
+    
+# STREAMLIT -- not necessary for website -- only model above
 st.title("NYC MTA Temperature Forecast")
 
 try:
