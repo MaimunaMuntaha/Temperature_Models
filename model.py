@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 import datetime
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 @st.cache_data
 def load_data():
@@ -214,10 +215,31 @@ try:
             st.sidebar.write(f"Humidity model: {adj_r2_h:.3f}")
             st.sidebar.write(f"Street-level Temp model: {adj_r2_offset:.3f}")
             st.sidebar.write(f"Platform-level Offset model: {adj_r2_pf_off:.3f}")
+            st.sidebar.subheader("Model Error Metrics")
+            st.sidebar.write(f"Street Temp RMSE: {rmse_offset:.2f} °F")
+            st.sidebar.write(f"Street Temp MAE: {mae_offset:.2f} °F")
+            st.sidebar.write(f"Platform Temp RMSE: {rmse_pf:.2f} °F")
+            st.sidebar.write(f"Platform Temp MAE: {mae_pf:.2f} °F")
+
             st.subheader("True vs Predicted (Street-Level Temp) Plot")
             high_temp_test = np.full_like(y_test_offset, high_temp)
             true_temp = y_test_offset + high_temp_test
             pred_temp = y_pred_offset + high_temp_test
+
+            # Street-level actual and predicted full temps
+            true_temp = y_test_offset + np.full_like(y_test_offset, high_temp)
+            pred_temp = y_pred_offset + np.full_like(y_test_offset, high_temp)
+            
+            rmse_offset = mean_squared_error(true_temp, pred_temp, squared=False)
+            mae_offset = mean_absolute_error(true_temp, pred_temp)
+
+            true_pf_temp = y_test_pf_off + X_test_pf_off['Street level air temperature'].values
+            pred_pf_temp = y_pred_pf_off + X_test_pf_off['Street level air temperature'].values
+            
+            rmse_pf = mean_squared_error(true_pf_temp, pred_pf_temp, squared=False)
+            mae_pf = mean_absolute_error(true_pf_temp, pred_pf_temp)
+
+            
             fig, ax = plt.subplots()
             ax.scatter(true_temp, pred_temp, alpha=0.5)
             ax.plot([true_temp.min(), true_temp.max()], [true_temp.min(), true_temp.max()], 'r--')
