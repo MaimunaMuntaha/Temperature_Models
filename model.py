@@ -165,9 +165,6 @@ try:
             day_of_week = date.weekday()
             month = date.month
             gtfs_id = station_to_gtfs.get(station_name)
-            if gtfs_id is None:
-                st.error("Selected station does not have a GTFS Stop ID mapping.")
-                st.stop()
             station_encoded = le_station.transform([gtfs_id])[0]
 
             humidity_input = pd.DataFrame({
