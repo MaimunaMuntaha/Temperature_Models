@@ -216,17 +216,7 @@ try:
             st.sidebar.write(f"Street-level Temp model: {adj_r2_offset:.3f}")
             st.sidebar.write(f"Platform-level Offset model: {adj_r2_pf_off:.3f}")
             st.sidebar.subheader("Model Error Metrics")
-            st.sidebar.write(f"Street Temp RMSE: {rmse_offset:.2f} °F")
-            st.sidebar.write(f"Street Temp MAE: {mae_offset:.2f} °F")
-            st.sidebar.write(f"Platform Temp RMSE: {rmse_pf:.2f} °F")
-            st.sidebar.write(f"Platform Temp MAE: {mae_pf:.2f} °F")
-
-            st.subheader("True vs Predicted (Street-Level Temp) Plot")
-            high_temp_test = np.full_like(y_test_offset, high_temp)
-            true_temp = y_test_offset + high_temp_test
-            pred_temp = y_pred_offset + high_temp_test
-
-            # Street-level actual and predicted full temps
+             # Street-level actual and predicted full temps
             true_temp = y_test_offset + np.full_like(y_test_offset, high_temp)
             pred_temp = y_pred_offset + np.full_like(y_test_offset, high_temp)
             
@@ -238,7 +228,15 @@ try:
             
             rmse_pf = mean_squared_error(true_pf_temp, pred_pf_temp, squared=False)
             mae_pf = mean_absolute_error(true_pf_temp, pred_pf_temp)
+            st.sidebar.write(f"Street Temp RMSE: {rmse_offset:.2f} °F")
+            st.sidebar.write(f"Street Temp MAE: {mae_offset:.2f} °F")
+            st.sidebar.write(f"Platform Temp RMSE: {rmse_pf:.2f} °F")
+            st.sidebar.write(f"Platform Temp MAE: {mae_pf:.2f} °F")
 
+            st.subheader("True vs Predicted (Street-Level Temp) Plot")
+            high_temp_test = np.full_like(y_test_offset, high_temp)
+            true_temp = y_test_offset + high_temp_test
+            pred_temp = y_pred_offset + high_temp_test
             
             fig, ax = plt.subplots()
             ax.scatter(true_temp, pred_temp, alpha=0.5)
