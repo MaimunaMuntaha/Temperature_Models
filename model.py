@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 @st.cache_data
 def load_data():
     citywide_df = pd.read_csv("citywide.csv")
-    cuny_df = pd.read_excel("CUNY_MTA.csv")
+    cuny_df = pd.read_csv("CUNY_MTA.csv")
     return citywide_df, cuny_df
     
 #calculate the r^2 (technically not necessary for actual model in site)
