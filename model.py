@@ -46,12 +46,10 @@ def train_model(citywide_df, cuny_df):
         merged_df['Time for street level data collection'], format='%I:%M:%S %p', errors='coerce'
     ).dt.hour 
     merged_df['Day_of_Week'] = merged_df['Date'].dt.dayofweek
-    merged_df['Month'] = merged_df['Date'].dt.month
-    le_station = LabelEncoder()
-    merged_df['Station_encoded'] = le_station.fit_transform(merged_df['Station name'])
+    merged_df['Month'] = merged_df['Date'].dt.month 
     
     #predict humidity
-    humidity_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'Station_encoded', 'Hour', 'Month']].copy()
+    humidity_features = merged_df[['High Temp (°F)', 'Low Temp (°F)', 'Day_of_Week', 'gtfs_stop_id', 'Hour', 'Month']].copy()
     humidity_target = merged_df['Street level relative humidity']
     X_train_h, X_test_h, y_train_h, y_test_h = train_test_split(humidity_features, humidity_target, test_size=0.2, random_state=42)
     humidity_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -63,7 +61,7 @@ def train_model(citywide_df, cuny_df):
     #predict street OFFSET w RandomForestRegressor
     merged_df['Offset'] = merged_df['Street level air temperature'] - merged_df['High Temp (°F)']
     merged_df = merged_df[(merged_df['Offset'] > -5) & (merged_df['Offset'] < 20)]
-    offset_features = merged_df[['Station_encoded', 'Hour', 'Day_of_Week', 'Street level relative humidity', 'High Temp (°F)', 'Low Temp (°F)', 'Month']].copy()
+    offset_features = merged_df[['gtfs_stop_id', 'Hour', 'Day_of_Week', 'Street level relative humidity', 'High Temp (°F)', 'Low Temp (°F)', 'Month']].copy()
     offset_target = merged_df['Offset']
 
     X_train_offset, X_test_offset, y_train_offset, y_test_offset = train_test_split(offset_features, offset_target, test_size=0.2, random_state=42)
@@ -95,7 +93,7 @@ def train_model(citywide_df, cuny_df):
     
     platform_features = platform_df[[
         'Street level air temperature',
-        'Station_encoded',
+        'gtfs_stop_id',
         'Hour',
         'Day_of_Week',
         'Prev_High',
@@ -116,7 +114,7 @@ def train_model(citywide_df, cuny_df):
     platform_df['Platform_Offset'] = platform_df['Platform level air temperature'] - platform_df['Street level air temperature']
     
     platform_offset_features = platform_df[[
-        'Station_encoded', 
+        'gtfs_stop_id', 
         'Hour', 
         'Day_of_Week', 
         'Street level air temperature', 
@@ -169,13 +167,12 @@ try:
         try:
             hour = pd.to_datetime(time.strftime('%H:%M:%S')).hour
             day_of_week = date.weekday()
-            month = date.month
-            station_encoded = le_station.transform([station_name])[0]
+            month = date.month 
             humidity_input = pd.DataFrame({
                 'High Temp (°F)': [high_temp],
                 'Low Temp (°F)': [low_temp],
                 'Day_of_Week': [day_of_week],
-                'Station_encoded': [station_encoded],
+                'gtfs_stop_id': [gtfs_stop_id],
                 'Hour': [hour],
                 'Month': [month]
             })
@@ -183,7 +180,7 @@ try:
             predicted_humidity = humidity_model.predict(humidity_input)[0]
 
             offset_input_df = pd.DataFrame({
-                'Station_encoded': [station_encoded],
+                'gtfs_stop_id': [gtfs_stop_id],
                 'Hour': [hour],
                 'Day_of_Week': [day_of_week],
                 'Street level relative humidity': [predicted_humidity],
@@ -200,7 +197,7 @@ try:
             # --- Platform-level temperature using platform offset model ---
             prev_platform_temp = high_temp + 2.0
             platform_offset_input_df = pd.DataFrame({
-                'Station_encoded': [station_encoded],
+                'gtfs_stop_id': [gtfs_stop_id],
                 'Hour': [hour],
                 'Day_of_Week': [day_of_week],
                 'Street level air temperature': [street_level_temp_pred],
