@@ -215,8 +215,8 @@ try:
             st.sidebar.write(f"Humidity model: {adj_r2_h:.3f}")
             st.sidebar.write(f"Street-level Temp model: {adj_r2_offset:.3f}")
             st.sidebar.write(f"Platform-level Offset model: {adj_r2_pf_off:.3f}")
-            st.sidebar.subheader("Model Error Metrics")
-             # Street-level actual and predicted full temps
+            st.sidebar.subheader("Model Error Metrics") 
+            
             true_temp = y_test_offset + np.full_like(y_test_offset, high_temp)
             pred_temp = y_pred_offset + np.full_like(y_test_offset, high_temp)
             
