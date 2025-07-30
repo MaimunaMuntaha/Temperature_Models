@@ -228,10 +228,7 @@ plt.axhspan(26.5, 32.5, color="#f0cc4a", alpha=0.2)
 plt.axhspan(32.5, 40.5, color="#e4aa4c", alpha=0.2)
 plt.axhspan(40.5, 51.5, color="#c95935", alpha=0.2)
 
-plt.ylim(
-    min(*city_temps, *plat_temps, *platform_heat_indexes) - 1,
-    max(*city_temps, *plat_temps, *platform_heat_indexes) + 1,
-)
+plt.ylim(17, 43)
 
 plt.savefig(
     os.path.join(
