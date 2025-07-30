@@ -180,13 +180,16 @@ for pred in city_hourly_preds:
     )[0]
     platform_temp_pred = street_level_temp_pred + platform_offset_pred
 
-    plat_temps.append(platform_temp_pred)
-
     platform_level_heat_index = calculate_heat_index(
         platform_temp_pred, predicted_humidity
     )  # this is with street level predicted humidity
 
-    platform_heat_indexes.append(platform_level_heat_index)
+    if prev_low == None:  # if this is TODAY
+        plat_temps.append(None)
+        platform_heat_indexes.append(None)
+    else:
+        plat_temps.append(platform_temp_pred)
+        platform_heat_indexes.append(platform_level_heat_index)
 
     print(
         f"{pred_time} | {low_temp}, {high_temp} | {platform_temp_pred} | {predicted_humidity} | Plat heat index: {platform_level_heat_index}"
