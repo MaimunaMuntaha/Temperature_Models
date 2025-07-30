@@ -210,9 +210,9 @@ if not os.path.exists(CHART_OUT_DIR):
     os.makedirs(CHART_OUT_DIR)
 
 plt.figure(1, (20, 10))
-plt.plot(times, city_temps, label="Citywide Air Temperature", linewidth=2)
-plt.plot(times, plat_temps, label="Platform Level Air Temperature", linewidth=2)
-plt.plot(times, platform_heat_indexes, label="Platform Level Heat Index", linewidth=2)
+plt.plot(times, city_temps, label="Citywide Air Temperature", linewidth=3)
+plt.plot(times, plat_temps, label="Platform Level Air Temperature", linewidth=3)
+plt.plot(times, platform_heat_indexes, label="Platform Level Heat Index", linewidth=3)
 plt.xlabel("Time")
 plt.ylabel("°C")
 plt.title(title, fontweight="bold")
@@ -225,6 +225,16 @@ plt.savefig(
     ),
     bbox_inches="tight",
     dpi=400,
+)
+
+plt.axhspan(0, 26.5, color="#65a549", alpha=0.2)
+plt.axhspan(26.5, 32.5, color="#f0cc4a", alpha=0.2)
+plt.axhspan(32.5, 40.5, color="#e4aa4c", alpha=0.2)
+plt.axhspan(40.5, 51.5, color="#c95935", alpha=0.2)
+
+plt.ylim(
+    min(*city_temps, *plat_temps, *platform_heat_indexes) - 1,
+    max(*city_temps, *plat_temps, *platform_heat_indexes) + 1,
 )
 
 plt.show()
