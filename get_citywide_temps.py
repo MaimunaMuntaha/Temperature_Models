@@ -19,10 +19,14 @@ plt.rcParams.update(
 )
 
 
-headers = {"User-Agent": "vrbow4EbquY4wxNtd7wznDQqUvWuXiUvoQse9zZA9FXSgJwZ"}
+headers = {
+    "User-Agent": "vrbow4EbquY4wxNtd7wznDQqUvWuXiUvoQse9zZA9FXSgJwZ"
+}  # random string for user agent, TODO: change later, not important
 
-station_lat = 40.7358  # up to 4 decimal places
-station_long = -73.9905
+station_lat = 40.71192
+station_long = -73.94067
+gtfs_id = "L12"
+title = "Grand St (L)"
 
 # get nearest station
 url = f"https://api.weather.gov/points/{station_lat:.4f},{station_long:.4f}"
@@ -62,6 +66,10 @@ def calculate_heat_index(T, RH):
         # use simpler formula
         return 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (RH * 0.094))
     return HI
+
+
+def fToC(temp: float):
+    return (temp - 32) * (5 / 9)
 
 
 def get_min_or_max_from_hourly_preds(hourly_preds, date_to_filter: date, min_or_max):
@@ -106,9 +114,7 @@ for pred in city_hourly_preds[12:]:
     times.append(pred_time)
 
     pred_temp = float(pred["temperature"])
-    city_temps.append(pred_temp)
-
-    gtfs_id = "635"  # for unsq
+    city_temps.append(fToC(pred_temp))
 
     hour = pred_time.hour
     month = pred_time.month
@@ -189,8 +195,8 @@ for pred in city_hourly_preds[12:]:
         plat_temps.append(None)
         platform_heat_indexes.append(None)
     else:
-        plat_temps.append(platform_temp_pred)
-        platform_heat_indexes.append(platform_level_heat_index)
+        plat_temps.append(fToC(platform_temp_pred))
+        platform_heat_indexes.append(fToC(platform_level_heat_index))
 
     print(
         f"{pred_time} | {low_temp}, {high_temp} | {platform_temp_pred} | {predicted_humidity} | Plat heat index: {platform_level_heat_index}"
@@ -202,12 +208,12 @@ if not os.path.exists(CHART_OUT_DIR):
     os.makedirs(CHART_OUT_DIR)
 
 plt.figure(1, (20, 10))
-plt.plot(times, city_temps, label="City Temp")
-plt.plot(times, plat_temps, label="Platform Level Air Temp")
-plt.plot(times, platform_heat_indexes, label="Platform Level Heat Index")
+plt.plot(times, city_temps, label="Citywide Air Temperature", linewidth=2)
+plt.plot(times, plat_temps, label="Platform Level Air Temperature", linewidth=2)
+plt.plot(times, platform_heat_indexes, label="Platform Level Heat Index", linewidth=2)
 plt.xlabel("Time")
-plt.ylabel("Temp")
-plt.title("Union Square (4, 5, 6)", fontweight="bold")
+plt.ylabel("°C")
+plt.title(title, fontweight="bold")
 plt.legend()
 plt.tight_layout()
 plt.savefig(
