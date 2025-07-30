@@ -23,11 +23,13 @@ headers = {
     "User-Agent": "vrbow4EbquY4wxNtd7wznDQqUvWuXiUvoQse9zZA9FXSgJwZ"
 }  # random string for user agent, TODO: change later, not important
 
-station_lat = 40.71192
-station_long = -73.94067
-gtfs_id = "L12"
-title = "Grand St (L)"
+station_lat = 40.616622
+station_long = -74.030876
+gtfs_id = "R45"
+title = "Bay Ridge-95 St"
 
+
+## CREDIT TO https://api.weather.gov
 # get nearest station
 url = f"https://api.weather.gov/points/{station_lat:.4f},{station_long:.4f}"
 print("Requesting ", url)
