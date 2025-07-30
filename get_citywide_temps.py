@@ -23,6 +23,10 @@ headers = {
     "User-Agent": "vrbow4EbquY4wxNtd7wznDQqUvWuXiUvoQse9zZA9FXSgJwZ"
 }  # random string for user agent, TODO: change later, not important
 
+# station_lat = 40.764629
+# station_long = -73.966113
+# gtfs_id = "B08"
+# title = "Lexington Av/63 St"
 station_lat = 40.616622
 station_long = -74.030876
 gtfs_id = "R45"
@@ -218,14 +222,6 @@ plt.ylabel("°C")
 plt.title(title, fontweight="bold")
 plt.legend()
 plt.tight_layout()
-plt.savefig(
-    os.path.join(
-        CHART_OUT_DIR,
-        f"out_{datetime.now()}.jpg",
-    ),
-    bbox_inches="tight",
-    dpi=400,
-)
 
 plt.axhspan(0, 26.5, color="#65a549", alpha=0.2)
 plt.axhspan(26.5, 32.5, color="#f0cc4a", alpha=0.2)
@@ -235,6 +231,15 @@ plt.axhspan(40.5, 51.5, color="#c95935", alpha=0.2)
 plt.ylim(
     min(*city_temps, *plat_temps, *platform_heat_indexes) - 1,
     max(*city_temps, *plat_temps, *platform_heat_indexes) + 1,
+)
+
+plt.savefig(
+    os.path.join(
+        CHART_OUT_DIR,
+        f"out_{datetime.now()}.jpg",
+    ),
+    bbox_inches="tight",
+    dpi=400,
 )
 
 plt.show()
