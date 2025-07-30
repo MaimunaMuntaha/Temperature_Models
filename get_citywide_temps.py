@@ -6,6 +6,7 @@ import pandas as pd
 import math
 import numpy as np
 import model
+import os
 
 plt.rcParams.update(
     {
@@ -100,7 +101,7 @@ plat_temps = []
 platform_heat_indexes = []
 
 
-for pred in city_hourly_preds:
+for pred in city_hourly_preds[12:]:
     pred_time = pred["startTime"]
     times.append(pred_time)
 
@@ -195,6 +196,11 @@ for pred in city_hourly_preds:
         f"{pred_time} | {low_temp}, {high_temp} | {platform_temp_pred} | {predicted_humidity} | Plat heat index: {platform_level_heat_index}"
     )
 
+CHART_OUT_DIR = "charts_out"
+
+if not os.path.exists(CHART_OUT_DIR):
+    os.makedirs(CHART_OUT_DIR)
+
 plt.figure(1, (20, 10))
 plt.plot(times, city_temps, label="City Temp")
 plt.plot(times, plat_temps, label="Platform Level Air Temp")
@@ -204,4 +210,13 @@ plt.ylabel("Temp")
 plt.title("Union Square (4, 5, 6)", fontweight="bold")
 plt.legend()
 plt.tight_layout()
+plt.savefig(
+    os.path.join(
+        CHART_OUT_DIR,
+        f"out_{datetime.now()}.jpg",
+    ),
+    bbox_inches="tight",
+    dpi=400,
+)
+
 plt.show()

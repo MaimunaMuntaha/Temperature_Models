@@ -1,5 +1,15 @@
 # https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore
 
+charts_out/
+
+*out
+
+out*/
+
+*.jpg
+
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
