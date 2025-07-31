@@ -213,20 +213,50 @@ CHART_OUT_DIR = "charts_out"
 if not os.path.exists(CHART_OUT_DIR):
     os.makedirs(CHART_OUT_DIR)
 
-plt.figure(1, (20, 10))
-plt.plot(times, city_temps, label="Citywide Air Temperature", linewidth=3)
-plt.plot(times, plat_temps, label="Platform Level Air Temperature", linewidth=3)
-plt.plot(times, platform_heat_indexes, label="Platform Level Heat Index", linewidth=3)
+
+fig, ax = plt.subplots(figsize=(20, 10))
+
+plt.axhspan(0, 26.5, color="#3da935", alpha=0.3)
+plt.axhspan(26.5, 32.5, color="#fecc00", alpha=0.3)
+plt.axhspan(32.5, 40.5, color="#f7a92c", alpha=0.3)
+plt.axhspan(40.5, 51.5, color="#e54e1f", alpha=1)
+
+plt.plot(
+    times,
+    platform_heat_indexes,
+    label="Platform Level Heat Index",
+    linewidth=6,
+)
+plt.plot(times, city_temps, label="Citywide Air Temperature", linewidth=6)
+plt.plot(times, plat_temps, label="Platform Level Air Temperature", linewidth=6)
+
+# for bay ridge
+if gtfs_id == "R45":
+    plt.text(
+        0.71,
+        0.945,
+        "DANGER!",
+        fontsize=36,
+        horizontalalignment="center",
+        verticalalignment="center",
+        transform=ax.transAxes,
+    )
+    plt.arrow(
+        0.78,
+        0.945,
+        0.024,
+        -0.01,
+        width=0.01,
+        head_length=0.013,
+        transform=ax.transAxes,
+        color="#000",
+    )
+
 plt.xlabel("Time")
 plt.ylabel("°C")
 plt.title(title, fontweight="bold")
 plt.legend()
 plt.tight_layout()
-
-plt.axhspan(0, 26.5, color="#65a549", alpha=0.2)
-plt.axhspan(26.5, 32.5, color="#f0cc4a", alpha=0.2)
-plt.axhspan(32.5, 40.5, color="#e4aa4c", alpha=0.2)
-plt.axhspan(40.5, 51.5, color="#c95935", alpha=0.2)
 
 plt.ylim(17, 43)
 
