@@ -245,27 +245,27 @@ plt.plot(
 plt.plot(times, city_temps, label="Citywide Air Temperature", linewidth=6)
 plt.plot(times, plat_temps, label="Platform Level Air Temperature", linewidth=6)
 
-# for bay ridge
-if gtfs_id == "R45":
-    plt.text(
-        0.71,
-        0.945,
-        "DANGER!",
-        fontsize=36,
-        horizontalalignment="center",
-        verticalalignment="center",
-        transform=ax.transAxes,
-    )
-    plt.arrow(
-        0.78,
-        0.945,
-        0.024,
-        -0.01,
-        width=0.01,
-        head_length=0.013,
-        transform=ax.transAxes,
-        color="#000",
-    )
+# # for bay ridge
+# if gtfs_id == "R45":
+#     plt.text(
+#         0.71,
+#         0.945,
+#         "DANGER!",
+#         fontsize=36,
+#         horizontalalignment="center",
+#         verticalalignment="center",
+#         transform=ax.transAxes,
+#     )
+#     plt.arrow(
+#         0.78,
+#         0.945,
+#         0.024,
+#         -0.01,
+#         width=0.01,
+#         head_length=0.013,
+#         transform=ax.transAxes,
+#         color="#000",
+#     )
 
 plt.xlabel("Time")
 plt.ylabel("°C")
