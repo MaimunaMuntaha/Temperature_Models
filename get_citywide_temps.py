@@ -200,8 +200,8 @@ for pred in city_hourly_preds[12:]:
             "Station_encoded": [station_encoded],
             "Hour": [hour],
             "Day_of_Week": [day_of_week],
-            # "Prev_Platform_Temp": [prev_platform_temp],
-            # "Prev_Platform_Humidity": [prev_platform_humidity],
+            "Prev_High": [prev_high],
+            "Prev_Low": [prev_low],
         }
     ).reindex(columns=model.platform_humidity_model.feature_names_in_, fill_value=0)
     oredicted_plat_humidity = model.platform_humidity_model.predict(
