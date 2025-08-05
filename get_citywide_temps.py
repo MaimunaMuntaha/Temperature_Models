@@ -193,8 +193,23 @@ for pred in city_hourly_preds[12:]:
     )[0]
     platform_temp_pred = street_level_temp_pred + platform_offset_pred
 
+    # Platform level relative humidity
+    platform_humidity_input_df = pd.DataFrame(
+        {
+            "Platform level air temperature": [platform_temp_pred],
+            "Station_encoded": [station_encoded],
+            "Hour": [hour],
+            "Day_of_Week": [day_of_week],
+            # "Prev_Platform_Temp": [prev_platform_temp],
+            # "Prev_Platform_Humidity": [prev_platform_humidity],
+        }
+    ).reindex(columns=model.platform_humidity_model.feature_names_in_, fill_value=0)
+    oredicted_plat_humidity = model.platform_humidity_model.predict(
+        platform_humidity_input_df
+    )[0]
+
     platform_level_heat_index = calculate_heat_index(
-        platform_temp_pred, predicted_humidity
+        platform_temp_pred, oredicted_plat_humidity
     )  # this is with street level predicted humidity
 
     if prev_low == None:  # if this is TODAY
@@ -205,7 +220,7 @@ for pred in city_hourly_preds[12:]:
         platform_heat_indexes.append(fToC(platform_level_heat_index))
 
     print(
-        f"{pred_time} | {low_temp}, {high_temp} | {platform_temp_pred} | {predicted_humidity} | Plat heat index: {platform_level_heat_index}"
+        f"{pred_time} | {low_temp}, {high_temp} | {platform_temp_pred} | (plat){oredicted_plat_humidity} | Plat heat index: {platform_level_heat_index}"
     )
 
 CHART_OUT_DIR = "charts_out"
@@ -261,12 +276,10 @@ plt.tight_layout()
 plt.ylim(17, 43)
 
 plt.savefig(
-    os.path.join(
-        CHART_OUT_DIR,
-        f"out_{datetime.now()}.jpg",
-    ),
+    os.path.join(CHART_OUT_DIR, f"out_{datetime.now()}.png"),
     bbox_inches="tight",
     dpi=400,
+    transparent=False,
 )
 
 plt.show()
