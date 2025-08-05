@@ -110,7 +110,7 @@ def train_model(citywide_df, cuny_df):
 
     # Platform Humidity Model
     platform_humidity_features = platform_df[
-        ["Platform level air temperature", "Station_encoded", "Hour", "Day_of_Week" ] #"Prev_Platform_Temp"
+        ["Platform level air temperature", "Station_encoded", "Hour", "Day_of_Week", "Prev_High", "Prev_Low" ] #"Prev_Platform_Temp"
     ].copy()
     platform_humidity_target = platform_df["Platform level relative humidity"] 
     X_train_ph, X_test_ph, y_train_ph, y_test_ph = train_test_split(platform_humidity_features, platform_humidity_target, test_size=0.2, random_state=42)
@@ -221,6 +221,8 @@ try:
             "Station_encoded": [station_encoded],
             "Hour": [hour],
             "Day_of_Week": [day_of_week],
+            "Prev_High": [prev_high],
+            "Prev_Low": [prev_low],
             # "Prev_Platform_Temp": [prev_platform_temp],
             # "Prev_Platform_Humidity": [prev_platform_humidity],
         }).reindex(columns=platform_humidity_model.feature_names_in_, fill_value=0)
