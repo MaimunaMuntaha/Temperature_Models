@@ -8,7 +8,6 @@ import datetime
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-
 @st.cache_data
 def load_data():
     citywide_df = pd.read_csv("citywide.csv")
@@ -111,9 +110,9 @@ def train_model(citywide_df, cuny_df):
 
     # Platform Humidity Model
     platform_humidity_features = platform_df[
-        ["Platform level air temperature", "Station_encoded", "Hour", "Day_of_Week", "Prev_Platform_Temp", "Prev_Platform_Humidity"]
+        ["Platform level air temperature", "Station_encoded", "Hour", "Day_of_Week" ] #"Prev_Platform_Temp"
     ].copy()
-    platform_humidity_target = platform_df["Platform level relative humidity"]
+    platform_humidity_target = platform_df["Platform level relative humidity"] 
     X_train_ph, X_test_ph, y_train_ph, y_test_ph = train_test_split(platform_humidity_features, platform_humidity_target, test_size=0.2, random_state=42)
     platform_humidity_model = RandomForestRegressor(n_estimators=200, random_state=42)
     platform_humidity_model.fit(X_train_ph, y_train_ph)
@@ -210,20 +209,20 @@ try:
             (platform_daily["gtfs_stop_id"] == gtfs_id)
             & (platform_daily["Prev_Date"] == pd.to_datetime(date))
         ]
-        if not platform_history.empty:
-            prev_platform_temp = platform_history["Prev_Platform_Temp"].values[0]
-            prev_platform_humidity = platform_history["Prev_Platform_Humidity"].values[0]
-        else:
-            prev_platform_temp = platform_temp_pred  # fallback
-            prev_platform_humidity = 60.0  # fallback
+        # if not platform_history.empty:
+        #     prev_platform_temp = platform_history["Prev_Platform_Temp"].values[0]
+        #     prev_platform_humidity = platform_history["Prev_Platform_Humidity"].values[0]
+        # else:
+        #     prev_platform_temp = platform_temp_pred  # fallback
+        #     prev_platform_humidity = 60.0  # fallback
 
         platform_humidity_input_df = pd.DataFrame({
             "Platform level air temperature": [platform_temp_pred],
             "Station_encoded": [station_encoded],
             "Hour": [hour],
             "Day_of_Week": [day_of_week],
-            "Prev_Platform_Temp": [prev_platform_temp],
-            "Prev_Platform_Humidity": [prev_platform_humidity],
+            # "Prev_Platform_Temp": [prev_platform_temp],
+            # "Prev_Platform_Humidity": [prev_platform_humidity],
         }).reindex(columns=platform_humidity_model.feature_names_in_, fill_value=0)
         platform_rh_pred = platform_humidity_model.predict(platform_humidity_input_df)[0]
 
