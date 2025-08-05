@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelEncoder
 import datetime
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import r2_score
 
 @st.cache_data
 def load_data():
@@ -17,6 +18,13 @@ def load_data():
 
 def adjusted_r2(r2, n, k):
     return 1 - (1 - r2) * ((n - 1) / (n - k - 1))
+
+def compute_metrics(y_true, y_pred, n, k):
+    r2 = r2_score(y_true, y_pred)
+    adj_r2_val = adjusted_r2(r2, n, k)
+    mae = mean_absolute_error(y_true, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    return r2, adj_r2_val, mae, rmse
 
 
 @st.cache_resource
@@ -61,7 +69,9 @@ def train_model(citywide_df, cuny_df):
     X_train_h, X_test_h, y_train_h, y_test_h = train_test_split(humidity_features, humidity_target, test_size=0.2, random_state=42)
     humidity_model = RandomForestRegressor(n_estimators=100, random_state=42)
     humidity_model.fit(X_train_h, y_train_h)
-    adj_r2_h = adjusted_r2(humidity_model.score(X_test_h, y_test_h), X_test_h.shape[0], X_test_h.shape[1])
+    y_pred_h = humidity_model.predict(X_test_h)
+    r2_h, adj_r2_h, mae_h, rmse_h = compute_metrics(y_test_h, y_pred_h, X_test_h.shape[0], X_test_h.shape[1])
+
 
     # Street-Level Temperature Offset Model
     merged_df["Offset"] = merged_df["Street level air temperature"] - merged_df["High Temp (°F)"]
@@ -74,7 +84,7 @@ def train_model(citywide_df, cuny_df):
     offset_model = RandomForestRegressor(n_estimators=300, max_depth=20, random_state=42)
     offset_model.fit(X_train_offset, y_train_offset)
     y_pred_offset = offset_model.predict(X_test_offset)
-    adj_r2_offset = adjusted_r2(offset_model.score(X_test_offset, y_test_offset), X_test_offset.shape[0], X_test_offset.shape[1])
+    r2_offset, adj_r2_offset, mae_offset, rmse_offset = compute_metrics(y_test_offset, y_pred_offset, X_test_offset.shape[0], X_test_offset.shape[1])
 
     # Merging dfs
     citywide_df["Prev_Date"] = citywide_df["Date"] + pd.Timedelta(days=1)
@@ -105,8 +115,8 @@ def train_model(citywide_df, cuny_df):
     X_train_pf_off, X_test_pf_off, y_train_pf_off, y_test_pf_off = train_test_split(platform_offset_features, platform_offset_target, test_size=0.2, random_state=42)
     platform_offset_model = RandomForestRegressor(n_estimators=200, random_state=42)
     platform_offset_model.fit(X_train_pf_off, y_train_pf_off)
-    y_pred_pf_off = platform_offset_model.predict(X_test_pf_off)
-    adj_r2_pf_off = adjusted_r2(platform_offset_model.score(X_test_pf_off, y_test_pf_off), X_test_pf_off.shape[0], X_test_pf_off.shape[1])
+    y_pred_pf_off = platform_offset_model.predict(X_test_pf_off) 
+    r2_pf_off, adj_r2_pf_off, mae_pf_off, rmse_pf_off = compute_metrics(y_test_pf_off, y_pred_pf_off, X_test_pf_off.shape[0], X_test_pf_off.shape[1])
 
     # Platform Humidity Model
     platform_humidity_features = platform_df[
@@ -116,7 +126,8 @@ def train_model(citywide_df, cuny_df):
     X_train_ph, X_test_ph, y_train_ph, y_test_ph = train_test_split(platform_humidity_features, platform_humidity_target, test_size=0.2, random_state=42)
     platform_humidity_model = RandomForestRegressor(n_estimators=200, random_state=42)
     platform_humidity_model.fit(X_train_ph, y_train_ph)
-    adj_r2_ph = adjusted_r2(platform_humidity_model.score(X_test_ph, y_test_ph), X_test_ph.shape[0], X_test_ph.shape[1])
+    y_pred_ph = platform_humidity_model.predict(X_test_ph)
+    r2_ph, adj_r2_ph, mae_ph, rmse_ph = compute_metrics(y_test_ph, y_pred_ph, X_test_ph.shape[0], X_test_ph.shape[1])
 
     return (
         humidity_model,
@@ -126,11 +137,11 @@ def train_model(citywide_df, cuny_df):
         le_station,
         station_to_gtfs,
         humidity_features.columns,
-        adj_r2_h,
-        adj_r2_offset,
-        adj_r2_pf_off,
-        adj_r2_ph,
-        platform_daily
+        (r2_h, adj_r2_h, mae_h, rmse_h),
+        (r2_offset, adj_r2_offset, mae_offset, rmse_offset),
+        (r2_pf_off, adj_r2_pf_off, mae_pf_off, rmse_pf_off),
+        (r2_ph, adj_r2_ph, mae_ph, rmse_ph),
+        platform_daily,
     )
 
 
@@ -146,12 +157,13 @@ try:
         le_station,
         station_to_gtfs,
         humidity_feature_cols,
-        adj_r2_h,
-        adj_r2_offset,
-        adj_r2_pf_off,
-        adj_r2_ph,
+        (r2_h, adj_r2_h, mae_h, rmse_h),
+        (r2_offset, adj_r2_offset, mae_offset, rmse_offset),
+        (r2_pf_off, adj_r2_pf_off, mae_pf_off, rmse_pf_off),
+        (r2_ph, adj_r2_ph, mae_ph, rmse_ph),
         platform_daily
     ) = train_model(citywide_df, cuny_df)
+
 
     station_name = st.selectbox("Select Station", sorted(cuny_df["Station name"].dropna().unique()))
     date = st.date_input("Select Date", value=datetime.date.today())
@@ -234,12 +246,20 @@ try:
         st.info(f"Predicted Platform-Level Temperature: {platform_temp_pred:.2f} °F")
         st.warning(f"Predicted Platform-Level Relative Humidity: {platform_rh_pred:.1f}%")
 
-        # Model's metrics -- r^2 for all vals
-        st.sidebar.header("Model Performance (Adjusted R²)")
-        st.sidebar.write(f"Street Relative Humidity: {adj_r2_h:.3f}")
-        st.sidebar.write(f"Street Temp: {adj_r2_offset:.3f}")
-        st.sidebar.write(f"Platform Temp: {adj_r2_pf_off:.3f}")
-        st.sidebar.write(f"Platform Relative Humidity: {adj_r2_ph:.3f}")
+        # Model's metrics -- r^2, adj r^2, mae, rmse
+        st.sidebar.header("Model Performance")
+
+        def display_metrics(name, r2, adj_r2, mae, rmse):
+            st.sidebar.subheader(name)
+            st.sidebar.write(f"R²: {r2:.3f}")
+            st.sidebar.write(f"Adjusted R²: {adj_r2:.3f}")
+            st.sidebar.write(f"MAE: {mae:.2f}")
+            st.sidebar.write(f"RMSE: {rmse:.2f}")
+
+        display_metrics("Street Relative Humidity", r2_h, adj_r2_h, mae_h, rmse_h)
+        display_metrics("Street Temp", r2_offset, adj_r2_offset, mae_offset, rmse_offset)
+        display_metrics("Platform Temp", r2_pf_off, adj_r2_pf_off, mae_pf_off, rmse_pf_off)
+        display_metrics("Platform Relative Humidity", r2_ph, adj_r2_ph, mae_ph, rmse_ph)
 
 except Exception as e:
     st.error(f"Unexpected error: {e}")
