@@ -1,6 +1,6 @@
 import httpx
 from pprint import pprint
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from matplotlib import pyplot as plt
 import pandas as pd
 import math
@@ -29,11 +29,17 @@ url = f"https://api.weather.gov/points/{station_lat:.4f},{station_long:.4f}"
 print("Requesting ", url)
 data = httpx.get(url, headers=headers).json()
 
-
+start_time = datetime(2024, 6, 20).astimezone(timezone.utc)
+end_time = datetime(2024, 6, 29).astimezone(timezone.utc)
+params = {
+    "start": start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "end": end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+}
+pprint(params)
 historical_url = f"https://api.weather.gov/zones/forecast/{zone_id}/observations"
-historical_data = httpx.get(historical_url, headers=headers).json()
+historical_data = httpx.get(historical_url, headers=headers, params=params).json()
 
-
+pprint(historical_data)
 observation_groups = []
 for feature in historical_data["features"][:15]:
     observation = feature["properties"]
