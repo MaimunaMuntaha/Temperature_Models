@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from pprint import pprint
+import seaborn as sns
+
 
 plt.rcParams.update(
     {
@@ -92,7 +94,24 @@ cuny_df.boxplot(
 )
 plt.xlabel("Number of Services")
 plt.ylabel("Platform Level Heat Index (°F)")
-plt.title("July 2024 and July 2025", fontweight="bold")
+plt.suptitle("July 2024 and July 2025", fontweight="bold")
+
+# Stacked histogram plots
+fig, axs = plt.subplots(cuny_df["Number of services"].max())
+fig.suptitle("July 2024 and July 2025", fontweight="bold")
+
+for number_of_services in range(1, cuny_df["Number of services"].max() + 1):
+    cuny_df_only_this_number_of_services = cuny_df[
+        cuny_df["Number of services"] == number_of_services
+    ]
+
+    sns.kdeplot(
+        cuny_df_only_this_number_of_services["Platform level heat index"],
+        ax=axs[number_of_services - 1],
+    )
+    axs[number_of_services - 1].set_xlabel("Platform Level Heat Index")
+    axs[number_of_services - 1].set_ylabel(f"{number_of_services} service, density")
+
 
 # Scatter plot for TPH
 plt.figure("TPH vs Platform Level Heat Index")
