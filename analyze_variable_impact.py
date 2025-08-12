@@ -83,6 +83,9 @@ cuny_df["Total TPH"] = cuny_df.apply(
 
 print(cuny_df)
 
+fig, ax = plt.figure(
+    "Boxplot of Number of services vs Platform level heat index ", figsize=(7, 7)
+)
 # Plots for Number of services
 cuny_df.boxplot(
     column="Platform level heat index",
@@ -90,14 +93,17 @@ cuny_df.boxplot(
     grid=False,
     vert=True,
     patch_artist=True,
-    return_type="dict",
+    ax=ax,
 )
+
 plt.xlabel("Number of Services")
 plt.ylabel("Platform Level Heat Index (°F)")
 plt.suptitle("July 2024 and July 2025", fontweight="bold")
 
 # Stacked histogram plots
-fig, axs = plt.subplots(cuny_df["Number of services"].max())
+fig, axs = plt.subplots(
+    1, cuny_df["Number of services"].max(), fig_kw={"figsize": (7, 7)}
+)
 fig.suptitle("July 2024 and July 2025", fontweight="bold")
 
 for number_of_services in range(1, cuny_df["Number of services"].max() + 1):
@@ -106,11 +112,12 @@ for number_of_services in range(1, cuny_df["Number of services"].max() + 1):
     ]
 
     sns.kdeplot(
-        cuny_df_only_this_number_of_services["Platform level heat index"],
+        cuny_df_only_this_number_of_services,
         ax=axs[number_of_services - 1],
+        y="Platform level heat index",
     )
-    axs[number_of_services - 1].set_xlabel("Platform Level Heat Index")
-    axs[number_of_services - 1].set_ylabel(f"{number_of_services} service, density")
+    axs[number_of_services - 1].set_xlabel(f"{number_of_services} service, density")
+    axs[number_of_services - 1].set_ylabel("Platform Level Heat Index")
 
 
 # Scatter plot for TPH
