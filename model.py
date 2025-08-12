@@ -34,7 +34,7 @@ def adjusted_r2(rSquared, sampleCount, featureCount):
         if sampleCount > featureCount + 1
         else np.nan
     )
-
+#1
 
 @st.cache_resource
 def train_model(citywideData, cunyMtaData):
