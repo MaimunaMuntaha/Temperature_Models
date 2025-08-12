@@ -49,7 +49,7 @@ def train_model(citywideData, cunyMtaData):
     # unique stations
     stationEncoder = LabelEncoder()
     mergedData["StationEncoded"] = stationEncoder.fit_transform(
-        mergedData["Station name"]
+        mergedData["gtfs_stop_id"]
     )
 
     # MOST IMPORTANT CHANGE: Platform vs citywide relationships
@@ -57,7 +57,7 @@ def train_model(citywideData, cunyMtaData):
         mergedData["Platform level air temperature"] - mergedData["High Temp (°F)"]
     )
 
-    stationStats = mergedData.groupby("Station name").agg(
+    stationStats = mergedData.groupby("gtfs_stop_id").agg(
         {
             "PlatformVsHigh": ["mean"],
         }
@@ -68,7 +68,7 @@ def train_model(citywideData, cunyMtaData):
     ]
     stationStats = stationStats.reset_index()
 
-    mergedData = mergedData.merge(stationStats, on="Station name", how="left")
+    mergedData = mergedData.merge(stationStats, on="gtfs_stop_id", how="left")
 
     # Remove outliers
     mergedData = mergedData[
@@ -144,6 +144,9 @@ try:
         selectedStation = st.selectbox(
             "Station", sorted(cunyMtaData["Station name"].dropna().unique())
         )
+        selectedStation_gtfs_id = cunyMtaData[
+            cunyMtaData["Station name"] == selectedStation
+        ]["gtfs_stop_id"].iloc[0]
         selectedDate = st.date_input("Date", value=datetime.date.today())
         selectedTime = st.time_input("Time", value=datetime.time(12, 0))
     with column2:
@@ -154,7 +157,7 @@ try:
         hourValue = pd.to_datetime(selectedTime.strftime("%H:%M:%S")).hour
 
         try:
-            stationEncodedValue = stationEncoder.transform([selectedStation])[0]
+            stationEncodedValue = stationEncoder.transform([selectedStation_gtfs_id])[0]
         except Exception:
             st.error("Station not in training data.")
             st.stop()
