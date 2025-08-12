@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pprint import pprint
 import seaborn as sns
+import os
 
 
 plt.rcParams.update(
@@ -14,6 +15,11 @@ plt.rcParams.update(
         "axes.labelweight": "bold",
     }
 )
+
+CHART_OUT_DIR = "paper_charts"
+
+if not os.path.exists(CHART_OUT_DIR):
+    os.makedirs(CHART_OUT_DIR)
 
 cuny_df = pd.read_csv("CUNY_MTA.csv")
 cuny_df["Timestamp"] = pd.to_datetime(cuny_df["Timestamp"], errors="coerce")
@@ -130,7 +136,11 @@ for number_of_services in range(1, cuny_df["Number of services"].max() + 1):
 ax.legend()
 ax.set_xlim(75, 125)
 fig.tight_layout()
-plt.savefig(f"test.jpg", bbox_inches="tight", dpi=400)
+plt.savefig(
+    os.path.join(CHART_OUT_DIR, "histogram_platform_heat_index_by_service.jpg"),
+    bbox_inches="tight",
+    dpi=400,
+)
 
 # Scatter plot for TPH
 plt.figure("TPH vs Platform Level Heat Index")
