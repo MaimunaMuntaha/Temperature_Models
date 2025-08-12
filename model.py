@@ -6,8 +6,14 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import r2_score, root_mean_squared_error, mean_absolute_error
 import datetime, matplotlib.pyplot as plt
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+import time
+
+
+USE_HYPERPARAM_SEARCH = False
 
 st.set_page_config(page_title="Subway Heat Forecast")
+
 
 @st.cache_data
 def load_data():
@@ -30,6 +36,63 @@ def adjusted_r2(rSquared, sampleCount, featureCount):
         if sampleCount > featureCount + 1
         else np.nan
     )
+
+
+def hyper_param_search_and_train_model(X_train, y_train):
+    # n_estimators = [int(x) for x in np.linspace(start = 10, stop = 2000, num = 10)]
+    n_estimators = [10, 20, 50, 100, 200, 500, 1000, 1200, 1500, 1800, 1900, 2000]
+    # Number of features to consider at every split
+    max_features = [
+        "log2",
+        "sqrt",
+        1.0,
+    ]  # all in the following array are fast but log2 is fastest ['log2', 'sqrt', 1.0]
+    # Maximum number of levels in tree
+    max_depth = [int(x) for x in np.linspace(10, 110, num=11)]
+    # max_depth.append(None)
+    # Minimum number of samples required to split a node
+    min_samples_split = list(range(1, 4))
+    # Minimum number of samples required at each leaf node
+    min_samples_leaf = list(range(1, 4))
+
+    # Define the parameter grid for RandomizedSearchCV
+    param_grid = {
+        "n_estimators": n_estimators,
+        # 'max_depth': max_depth,
+        "min_samples_split": min_samples_split,
+        "min_samples_leaf": min_samples_leaf,
+        # 'max_features': max_features,
+    }
+
+    # Initialize the Random Forest model
+    rf_model = RandomForestRegressor()  # 2 for mse
+
+    time_start = time.time()
+    print(
+        "Searching for best hyperparamaters using a random search and checking by fitting model..."
+    )
+
+    # Initialize the RandomizedSearchCV with 5-fold cross-validation
+    random_search = GridSearchCV(  # GridSearchCV is more exhuastive
+        rf_model,
+        param_grid,
+        cv=5,
+        # scoring='r2',
+        scoring="neg_mean_absolute_error",  # neg_mean_absolute_error = MAE
+        n_jobs=-1,
+    )
+
+    # Fit the RandomizedSearchCV to find the best hyperparameters (by randomly trying combos within param grid and fitting and testing accordingly)
+    random_search.fit(X_train, y_train)
+    time_end = time.time()
+    time_diff = time_end - time_start
+    print(f"Random search & Fit finished, elapsed {time_diff} seconds")
+
+    # Get the best parameters
+    best_params = random_search.best_params_
+    best_model = random_search.best_estimator_
+    return best_params, best_model
+
 
 @st.cache_resource
 def train_model(citywideData, cunyMtaData):
@@ -87,15 +150,17 @@ def train_model(citywideData, cunyMtaData):
     XTrain, XTest, yTrain, yTest = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-
-    model = RandomForestRegressor(
-        n_estimators=200,
-        max_depth=20,
-        min_samples_split=5,
-        max_features="sqrt",
-        random_state=42,
-    )
-    model.fit(XTrain, yTrain)
+    if USE_HYPERPARAM_SEARCH:
+        model = hyper_param_search_and_train_model(XTrain, yTrain)
+    else:
+        model = RandomForestRegressor(
+            n_estimators=200,
+            max_depth=20,
+            min_samples_split=5,
+            max_features="sqrt",
+            random_state=42,
+        )
+        model.fit(XTrain, yTrain)
 
     predictions = model.predict(XTest)
     rSquared = r2_score(yTest, predictions)
@@ -111,6 +176,7 @@ def train_model(citywideData, cunyMtaData):
         stationStats,
         X,
     )
+
 
 # streamlit
 st.title("Subway Heat Forecast")
