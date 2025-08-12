@@ -10,7 +10,7 @@ from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 import time
 
 
-USE_HYPERPARAM_SEARCH = False
+USE_HYPERPARAM_SEARCH = True
 
 st.set_page_config(page_title="Subway Heat Forecast")
 
@@ -58,7 +58,7 @@ def hyper_param_search_and_train_model(X_train, y_train):
     # Define the parameter grid for RandomizedSearchCV
     param_grid = {
         "n_estimators": n_estimators,
-        # 'max_depth': max_depth,
+        'max_depth': max_depth,
         "min_samples_split": min_samples_split,
         "min_samples_leaf": min_samples_leaf,
         # 'max_features': max_features,
@@ -151,7 +151,9 @@ def train_model(citywideData, cunyMtaData):
         X, y, test_size=0.2, random_state=42
     )
     if USE_HYPERPARAM_SEARCH:
-        model = hyper_param_search_and_train_model(XTrain, yTrain)
+        best_params, model = hyper_param_search_and_train_model(XTrain, yTrain)
+        print("Best params: ")
+        print(best_params)
     else:
         model = RandomForestRegressor(
             n_estimators=200,
