@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import r2_score, root_mean_squared_error, mean_absolute_error
 import datetime, matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Subway Heat Forecast")
@@ -66,7 +66,7 @@ def train_model(citywideData, cunyMtaData):
     predictions = model.predict(XTest)
     rSquared = r2_score(yTest, predictions)
     meanAbsError = mean_absolute_error(yTest, predictions)
-    rootMeanSquaredError = mean_squared_error(yTest, predictions, squared=False)
+    rootMeanSquaredError = root_mean_squared_error(yTest, predictions)
     adjustedRSquared = adjusted_r2(rSquared, len(yTest), XTest.shape[1])
 
     return model, stationEncoder, featureList, (rSquared, adjustedRSquared, meanAbsError, rootMeanSquaredError), stationStats, X
