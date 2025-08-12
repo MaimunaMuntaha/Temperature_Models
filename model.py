@@ -168,13 +168,20 @@ def train_model(citywideData, cunyMtaData):
     rootMeanSquaredError = root_mean_squared_error(yTest, predictions)
     adjustedRSquared = adjusted_r2(rSquared, len(yTest), XTest.shape[1])
 
+    # Feature importance
+    feature_importances = model.feature_importances_
+    fig, ax = plt.subplots()
+    indices = np.argsort(feature_importances)
+    features = X.columns
+    ax.barh(features, feature_importances, color="skyblue", ec="black")
+    st.pyplot(fig)
+
     return (
         model,
         stationEncoder,
         featureList,
         (rSquared, adjustedRSquared, meanAbsError, rootMeanSquaredError),
         stationStats,
-        X,
     )
 
 
@@ -189,7 +196,6 @@ try:
         featureList,
         (rSquared, adjustedRSquared, meanAbsError, rootMeanSquaredError),
         stationStats,
-        X,
     ) = train_model(citywideData, cunyMtaData)
 
     st.subheader("Make a Prediction")
@@ -236,13 +242,6 @@ try:
     st.sidebar.write(f"MAE: {meanAbsError:.2f} °F")
     st.sidebar.write(f"RMSE: {rootMeanSquaredError:.2f} °F")
 
-    # Feature importance
-    feature_importances = model.feature_importances_
-    fig, ax = plt.subplots()
-    indices = np.argsort(feature_importances)
-    features = X.columns
-    ax.barh(features, feature_importances, color="skyblue", ec="black")
-    st.pyplot(fig)
 
 except Exception as error:
     st.error(f"Error: {error}")
