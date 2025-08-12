@@ -32,18 +32,11 @@ def train_model(citywideData, cunyMtaData):
     stationEncoder = LabelEncoder()
     mergedData["StationEncoded"] = stationEncoder.fit_transform(mergedData["Station name"])
 
-    # Citywide temps
-    mergedData["CitywideAverage"] = (mergedData["High Temp (°F)"] + mergedData["Low Temp (°F)"]) / 2
-    mergedData["TemperatureRange"] = mergedData["High Temp (°F)"] - mergedData["Low Temp (°F)"]
-
     # MOST IMPORTANT CHANGE: Platform vs citywide relationships
-    mergedData["PlatformVsHigh"] = mergedData["Platform level air temperature"] - mergedData["High Temp (°F)"]
-    mergedData["PlatformVsAverage"] = mergedData["Platform level air temperature"] - mergedData["CitywideAverage"]
+    mergedData["PlatformVsHigh"] = mergedData["Platform level air temperature"] - mergedData["High Temp (°F)"] 
 
     stationStats = mergedData.groupby("Station name").agg({
-        "PlatformVsHigh": ["mean", "std"],
-        "PlatformVsAverage": ["mean", "std"],
-        "Platform level air temperature": ["mean", "std"]
+        "PlatformVsHigh": ["mean"], 
     })
     stationStats.columns = [f"{firstPart}{secondPart.capitalize()}" for firstPart, secondPart in stationStats.columns]
     stationStats = stationStats.reset_index()
@@ -95,8 +88,6 @@ try:
         cityHigh = st.number_input("Citywide High (°F)", value=85.0)
         cityLow = st.number_input("Citywide Low (°F)", value=70.0)
         
-    
-
     if st.button("Predict Platform Temp"):
         hourValue = pd.to_datetime(selectedTime.strftime("%H:%M:%S")).hour  
         
@@ -106,12 +97,9 @@ try:
             st.error("Station not in training data.")
             st.stop()
 
-        cityAverage = (cityHigh + cityLow) / 2
-        temperatureRange = (cityHigh - cityLow)
         
         predictionValues = {
-            "High Temp (°F)": cityHigh, "Low Temp (°F)": cityLow, 
-             "TemperatureRange": temperatureRange,
+            "High Temp (°F)": cityHigh, "Low Temp (°F)": cityLow,  
             "StationEncoded": stationEncodedValue, 
             "Hour": hourValue,  
         }
@@ -119,8 +107,7 @@ try:
         XInput = pd.DataFrame([predictionValues]).reindex(columns=featureList, fill_value=0)
         predictedValue = model.predict(XInput)[0]
         st.success(f"Predicted Platform Temperature: {predictedValue:.1f} °F")
-        st.metric("The Difference from Citywide High", f"{predictedValue - cityHigh:+.1f}°F")
-        st.metric("The Difference from Citywide Avg", f"{predictedValue - cityAverage:+.1f}°F")
+        st.metric("The Difference from Citywide High", f"{predictedValue - cityHigh:+.1f}°F") 
 
     # Sidebar performance  
     st.sidebar.header("Model Performance")
@@ -134,12 +121,7 @@ try:
     fig, ax = plt.subplots()
     indices = np.argsort(feature_importances)
     features = X.columns
-    ax.barh(features, feature_importances, color="skyblue", ec="black")
-    #plt.xlim(0, 0.3)
-    #plt.xlabel('Relative Importance', fontweight='bold')
-    # plt.yticks(range(len(indices)), [features[i] for i in indices])
-    #plt.tight_layout()
-    #plt.show()
+    ax.barh(features, feature_importances, color="skyblue", ec="black") 
     st.pyplot(fig)
 
 except Exception as error:
