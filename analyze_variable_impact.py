@@ -201,7 +201,7 @@ for index in range(len(years)):
     plt.scatter(
         citywide_df_in_date_range["Date"].dt.strftime(r"%b %-d"),
         f_to_c(citywide_df_in_date_range["High Temp (°F)"]),
-        label="Citywide High Temperature",
+        label="Citywide High",
         s=64,
         color=marker_color,
         marker="o",
@@ -221,24 +221,29 @@ for index in range(len(years)):
             (this_day_cuny_df["Timestamp"].dt.hour >= 12)
             & (this_day_cuny_df["Timestamp"].dt.hour < 14)
         ]
-        median_var = this_day_cuny_df["Platform level air temperature"].median()
+        mean_var = this_day_cuny_df["Platform level air temperature"].mean()
         xs.append(day.strftime(r"%b %-d"))
-        ys.append(f_to_c(median_var))
+        ys.append(f_to_c(mean_var))
 
     plt.scatter(
         xs,
         ys,
-        label=f"Median Platform Level Air Temperature {year} [12:00 to 14:00]",
-        s=64,
+        label=f"{year} Platform Mean",
+        s=256,
         color=marker_color,
         marker="*",
     )
+plt.grid(True)
 plt.xticks(rotation=45)
 plt.xlabel("Date")
 plt.ylabel("Air Temperature (°C)")
+plt.title(
+    "Platform Level Air Temperature [12:00 to 14:00] vs. Citywide High Air Temperature",
+    fontweight="bold",
+)
 plt.legend()
 plt.savefig(
-    os.path.join(CHART_OUT_DIR, "time_series_citywide_to_median_air_temp.jpg"),
+    os.path.join(CHART_OUT_DIR, "time_series_citywide_to_mean_air_temp.jpg"),
     bbox_inches="tight",
     dpi=400,
 )
