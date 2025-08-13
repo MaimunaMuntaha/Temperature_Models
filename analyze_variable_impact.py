@@ -182,7 +182,7 @@ plt.ylabel("Platform Level Heat Index (°C)")
 # Plot for citywide temps
 
 citywide_df = pd.read_csv("citywide.csv")
-citywide_df["Date"] = pd.to_datetime(citywide_df["Date"])
+citywide_df["Date"] = pd.to_datetime(citywide_df["Date"], errors="coerce")
 
 plt.figure("Citywide Temperature vs Platform Heat Index", (14, 7))
 
@@ -193,13 +193,13 @@ for index in range(len(years)):
     year = years[index]
     marker_color = marker_colors[index]
     START_DATE = f"{year}-07-01"
-    END_DATE = f"{year}-07-12"
+    END_DATE = f"{year}-07-31"
 
     citywide_df_in_date_range = citywide_df[
         (citywide_df["Date"] >= START_DATE) & (citywide_df["Date"] <= END_DATE)
     ]
     plt.scatter(
-        citywide_df_in_date_range["Date"].dt.strftime(r"%b %-d"),
+        citywide_df_in_date_range["Date"].dt.strftime(r"%-d"),
         f_to_c(citywide_df_in_date_range["High Temp (°F)"]),
         label="Citywide High",
         s=64,
@@ -222,7 +222,7 @@ for index in range(len(years)):
             & (this_day_cuny_df["Timestamp"].dt.hour < 14)
         ]
         mean_var = this_day_cuny_df["Platform level air temperature"].mean()
-        xs.append(day.strftime(r"%b %-d"))
+        xs.append(day.strftime(r"%-d"))
         ys.append(f_to_c(mean_var))
 
     plt.scatter(
@@ -234,8 +234,8 @@ for index in range(len(years)):
         marker="*",
     )
 plt.grid(True)
-plt.xticks(rotation=45)
-plt.xlabel("Date")
+# plt.xticks(rotation=45)
+plt.xlabel("Day in July")
 plt.ylabel("Air Temperature (°C)")
 plt.title(
     "Platform Level Air Temperature [12:00 to 14:00] vs. Citywide High Air Temperature",
