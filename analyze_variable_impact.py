@@ -180,48 +180,60 @@ plt.ylabel("Platform Level Heat Index (°C)")
 
 
 # Plot for citywide temps
-plt.figure("Citywide Temperature vs Platform Heat Index", (14, 7))
-START_DATE = "2025-07-01"
-END_DATE = "2025-07-12"
-
 
 citywide_df = pd.read_csv("citywide.csv")
 citywide_df["Date"] = pd.to_datetime(citywide_df["Date"])
-citywide_df_in_date_range = citywide_df[
-    (citywide_df["Date"] >= START_DATE) & (citywide_df["Date"] <= END_DATE)
-]
-plt.scatter(
-    citywide_df_in_date_range["Date"],
-    f_to_c(citywide_df_in_date_range["High Temp (°F)"]),
-    label="Citywide High Temperature",
-    s=64,
-)
 
-filtered_cuny_df = cuny_df[
-    (cuny_df["Timestamp"] >= START_DATE) & (cuny_df["Timestamp"] <= END_DATE)
-]
+plt.figure("Citywide Temperature vs Platform Heat Index", (14, 7))
 
+years = [2024, 2025]
+marker_colors = ["blue", "orange"]
 
-# Take mean of each days
-xs = []
-ys = []
+for index in range(len(years)):
+    year = years[index]
+    marker_color = marker_colors[index]
+    START_DATE = f"{year}-07-01"
+    END_DATE = f"{year}-07-12"
 
-for day in list(pd.date_range(start=START_DATE, end=END_DATE, freq=f"1D")):
-    this_day_cuny_df = cuny_df[cuny_df["Timestamp"].dt.date == day.date()]
-    this_day_cuny_df = this_day_cuny_df[
-        (this_day_cuny_df["Timestamp"].dt.hour >= 12)
-        & (this_day_cuny_df["Timestamp"].dt.hour < 14)
+    citywide_df_in_date_range = citywide_df[
+        (citywide_df["Date"] >= START_DATE) & (citywide_df["Date"] <= END_DATE)
     ]
-    median_var = this_day_cuny_df["Platform level air temperature"].median()
-    xs.append(day.date())
-    ys.append(f_to_c(median_var))
+    plt.scatter(
+        citywide_df_in_date_range["Date"].dt.strftime(r"%b %-d"),
+        f_to_c(citywide_df_in_date_range["High Temp (°F)"]),
+        label="Citywide High Temperature",
+        s=64,
+        color=marker_color,
+        marker="o",
+    )
 
-plt.scatter(
-    xs,
-    ys,
-    label="Median Platform Level Air Temperature (°C) [12:00 to 14:00]",
-    s=64,
-)
+    filtered_cuny_df = cuny_df[
+        (cuny_df["Timestamp"] >= START_DATE) & (cuny_df["Timestamp"] <= END_DATE)
+    ]
+
+    # Take mean of each days
+    xs = []
+    ys = []
+
+    for day in list(pd.date_range(start=START_DATE, end=END_DATE, freq=f"1D")):
+        this_day_cuny_df = cuny_df[cuny_df["Timestamp"].dt.date == day.date()]
+        this_day_cuny_df = this_day_cuny_df[
+            (this_day_cuny_df["Timestamp"].dt.hour >= 12)
+            & (this_day_cuny_df["Timestamp"].dt.hour < 14)
+        ]
+        median_var = this_day_cuny_df["Platform level air temperature"].median()
+        xs.append(day.strftime(r"%b %-d"))
+        ys.append(f_to_c(median_var))
+
+    plt.scatter(
+        xs,
+        ys,
+        label=f"Median Platform Level Air Temperature {year} [12:00 to 14:00]",
+        s=64,
+        color=marker_color,
+        marker="*",
+    )
+plt.xticks(rotation=45)
 plt.xlabel("Date")
 plt.ylabel("Air Temperature (°C)")
 plt.legend()
