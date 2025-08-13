@@ -194,6 +194,7 @@ plt.scatter(
     citywide_df_in_date_range["Date"],
     f_to_c(citywide_df_in_date_range["High Temp (°F)"]),
     label="Citywide High Temperature",
+    s=64,
 )
 
 filtered_cuny_df = cuny_df[
@@ -219,6 +220,7 @@ plt.scatter(
     xs,
     ys,
     label="Median Platform Level Air Temperature (°C) [12:00 to 14:00]",
+    s=64,
 )
 plt.xlabel("Date")
 plt.ylabel("Air Temperature (°C)")
