@@ -8,7 +8,7 @@ import os
 
 plt.rcParams.update(
     {
-        "font.size": 18,
+        "font.size": 20,
         "font.family": "sans-serif",
         "font.sans-serif": "Arial",
         "font.weight": "bold",
@@ -27,10 +27,12 @@ def f_to_c(f):
 
 
 cuny_df = pd.read_csv("CUNY_MTA.csv")
-cuny_df["Timestamp"] = pd.to_datetime(cuny_df["Timestamp"], errors="coerce")
+cuny_df["platform_collection_timestamp"] = pd.to_datetime(
+    cuny_df["platform_collection_timestamp"], errors="coerce"
+)
 
 # cuny_df = cuny_df[cuny_df["Platform level heat index"] > 80]
-cuny_df = cuny_df[cuny_df["Timestamp"].dt.month == 7]  # only july
+cuny_df = cuny_df[cuny_df["platform_collection_timestamp"].dt.month == 7]  # only july
 
 cuny_df["Number of services"] = cuny_df.apply(
     lambda row: len(row["Services"]),  # "EFMR" = 4
@@ -60,8 +62,8 @@ def calc_tph(row):
         ]
 
         # get hour of this timestamp
-        hour = row["Timestamp"].hour
-        weekday = row["Timestamp"].weekday()
+        hour = row["platform_collection_timestamp"].hour
+        weekday = row["platform_collection_timestamp"].weekday()
 
         str_weekday = None
         if weekday < 5:  # 0,1,2,3,4 are M-F
@@ -208,7 +210,8 @@ for index in range(len(years)):
     )
 
     filtered_cuny_df = cuny_df[
-        (cuny_df["Timestamp"] >= START_DATE) & (cuny_df["Timestamp"] <= END_DATE)
+        (cuny_df["platform_collection_timestamp"] >= START_DATE)
+        & (cuny_df["platform_collection_timestamp"] <= END_DATE)
     ]
 
     # Take mean of each days
@@ -216,10 +219,12 @@ for index in range(len(years)):
     ys = []
 
     for day in list(pd.date_range(start=START_DATE, end=END_DATE, freq=f"1D")):
-        this_day_cuny_df = cuny_df[cuny_df["Timestamp"].dt.date == day.date()]
+        this_day_cuny_df = cuny_df[
+            cuny_df["platform_collection_timestamp"].dt.date == day.date()
+        ]
         this_day_cuny_df = this_day_cuny_df[
-            (this_day_cuny_df["Timestamp"].dt.hour >= 12)
-            & (this_day_cuny_df["Timestamp"].dt.hour < 14)
+            (this_day_cuny_df["platform_collection_timestamp"].dt.hour >= 12)
+            & (this_day_cuny_df["platform_collection_timestamp"].dt.hour < 14)
         ]
         mean_var = this_day_cuny_df["Platform level air temperature"].mean()
         xs.append(day.strftime(r"%-d"))
@@ -248,7 +253,39 @@ plt.savefig(
     dpi=400,
 )
 # -------------------------------------------------------------------------------------------------
+# helper program to take july means for arcgis program
+mta_df = pd.read_csv("all_mta_station_data.csv")
 
+output_mean_df_rows = []
 
-# Final show
-plt.show()
+## Print every station
+for gtfs_id in cuny_df["gtfs_stop_id"].unique():
+
+    gtfs_id_df = cuny_df[cuny_df["gtfs_stop_id"] == gtfs_id]
+
+    gtfs_id_df = gtfs_id_df[
+        gtfs_id_df["platform_collection_timestamp"].dt.month == 7
+    ]  # already filtered to only july
+    # print(gtfs_id_df["platform_collection_timestamp"])
+
+    platform_mean_air_temp = gtfs_id_df["Platform level air temperature"].mean()
+    platform_mean_heat_index = gtfs_id_df["Platform level heat index"].mean()
+    platform_mean_humidity = gtfs_id_df["Platform level relative humidity"].mean()
+    gtfs_lat = mta_df[mta_df["GTFS Stop ID"] == gtfs_id]["GTFS Latitude"].item()
+    gtfs_long = mta_df[mta_df["GTFS Stop ID"] == gtfs_id]["GTFS Longitude"].item()
+
+    output_mean_df_rows.append(
+        {
+            "gtfs_id": gtfs_id,
+            "platform_mean_air_temp": platform_mean_air_temp,
+            "platform_mean_heat_index": platform_mean_heat_index,
+            "platform_mean_humidity": platform_mean_humidity,
+            "gtfs_lat": gtfs_lat,
+            "gtfs_long": gtfs_long,
+        }
+    )
+
+# assemble new df
+mean_df = pd.DataFrame(output_mean_df_rows)
+
+print(mean_df)  # save to csv for arcgis
