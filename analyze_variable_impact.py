@@ -146,7 +146,7 @@ for number_of_services in range(1, cuny_df["Number of services"].max() + 1):
         cuny_df_only_this_number_of_services["Platform level heat index (°C)"],
         ax=ax,
         label=f"{number_of_services} service{"" if number_of_services == 1 else "s"}",
-        linewidth=2,
+        linewidth=4,
     )
     # Median heat index
     median_heat_index = np.median(
@@ -156,7 +156,7 @@ for number_of_services in range(1, cuny_df["Number of services"].max() + 1):
         x=median_heat_index,
         color=ax.get_lines()[-1].get_color(),
         linestyle="--",
-        linewidth=1.5,
+        linewidth=3,
     )
 
 ax.set_xlabel("Platform Level Heat Index (°C)")
